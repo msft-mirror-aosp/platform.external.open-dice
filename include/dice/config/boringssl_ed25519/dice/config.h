@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,24 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "dice/boringssl_ops.h"
-#include "dice/dice.h"
-#include "dice/fuzz_utils.h"
-#include "dice/template_cert_op.h"
-#include "dice/utils.h"
+#ifndef DICE_CONFIG_H_
+#define DICE_CONFIG_H_
 
-namespace {
+// Ed25519
+#define DICE_PUBLIC_KEY_SIZE 32
+#define DICE_PRIVATE_KEY_SIZE 64
+#define DICE_SIGNATURE_SIZE 64
 
-constexpr DiceOps kOps = {
-    .context = NULL,
-    .hash = DiceBsslHashOp,
-    .kdf = DiceBsslKdfOp,
-    .generate_certificate = DiceGenerateCertificateFromTemplateOp,
-    .clear_memory = DiceClearMemory};
-
-}  // namespace
-
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  dice::fuzz::FuzzDiceMainFlow(&kOps, data, size);
-  return 0;
-}
+#endif  // DICE_DICE_CONFIG_H_

@@ -15,6 +15,12 @@ cc_library_headers {
     export_include_dirs: ["include"],
 }
 
+cc_library_headers {
+    name: "libopen_dice_boringssl_ed25519_headers",
+    host_supported: true,
+    export_include_dirs: ["include/dice/config/boringssl_ed25519"],
+}
+
 cc_library_static {
     name: "libopen_dice_cbor",
     host_supported: true,
@@ -22,11 +28,18 @@ cc_library_static {
         "src/boringssl_hash_kdf_sign_ops.c",
         "src/cbor_cert_op.c",
         "src/cbor_writer.c",
+        "src/clear_memory.c",
         "src/dice.c",
         "src/utils.c",
     ],
-    header_libs: ["libopen_dice_headers"],
-    export_header_lib_headers: ["libopen_dice_headers"],
+    header_libs: [
+        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_headers",
+    ],
+    export_header_lib_headers: [
+        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_headers",
+    ],
     shared_libs: ["libcrypto"],
 }
 
@@ -35,11 +48,15 @@ cc_test {
     host_supported: true,
     cflags: ["-DDICE_USE_GTEST"],
     srcs: [
+        "src/clear_memory.c",
         "src/dice_test.cc",
         "src/dice.c",
         "src/utils.c",
     ],
-    header_libs: ["libopen_dice_headers"],
+    header_libs: [
+        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_headers",
+    ],
     shared_libs: ["libcrypto"],
 }
 
@@ -63,10 +80,7 @@ cc_fuzz {
 cc_fuzz {
     name: "libopen_dice_cbor_fuzzer",
     host_supported: true,
-    srcs: [
-        "src/fuzz_utils.cc",
-        "src/cbor_cert_op_fuzzer.cc",
-    ],
+    srcs: ["src/fuzzer.cc"],
     static_libs: ["libopen_dice_cbor"],
     shared_libs: ["libcrypto"],
 }

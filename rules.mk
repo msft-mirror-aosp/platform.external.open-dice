@@ -24,10 +24,13 @@ MODULE_SRCS := \
 	$(LOCAL_DIR)/src/boringssl_hash_kdf_sign_ops.c \
 	$(LOCAL_DIR)/src/cbor_cert_op.c \
 	$(LOCAL_DIR)/src/cbor_writer.c \
+	$(LOCAL_DIR)/src/clear_memory.c \
 	$(LOCAL_DIR)/src/dice.c \
 	$(LOCAL_DIR)/src/utils.c \
 
-MODULE_EXPORT_INCLUDES += $(LOCAL_DIR)/include/
+MODULE_EXPORT_INCLUDES += \
+	$(LOCAL_DIR)/include/ \
+	$(LOCAL_DIR)/include/dice/config/boringssl_ed25519 \
 
 MODULE_LIBRARY_DEPS := \
 	external/boringssl \

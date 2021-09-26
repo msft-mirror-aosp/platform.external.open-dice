@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,15 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <stddef.h>
-#include <stdint.h>
+#ifndef DICE_CONFIG_H_
+#define DICE_CONFIG_H_
 
-#include "dice/dice.h"
+// ECDSA-P256
+#define DICE_PUBLIC_KEY_SIZE 33
+#define DICE_PRIVATE_KEY_SIZE 32
+#define DICE_SIGNATURE_SIZE 64
 
-namespace dice {
-namespace fuzz {
-
-int FuzzDiceMainFlow(const DiceOps* ops, const uint8_t* data, size_t size);
-
-}  // namespace fuzz
-}  // namespace dice
+#endif  // DICE_DICE_CONFIG_H_

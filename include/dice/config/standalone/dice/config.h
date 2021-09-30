@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,20 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "dice/utils.h"
+#ifndef DICE_CONFIG_H_
+#define DICE_CONFIG_H_
 
-#include <stdint.h>
+// The standalone config is only used for testing. In particular, it is used
+// for tests that focus on the core aspects of the library and not the ops.
+// These value aren't yet used meaningfully in such tests so are given
+// placeholder values.
+#define DICE_PUBLIC_KEY_SIZE 1
+#define DICE_PRIVATE_KEY_SIZE 1
+#define DICE_SIGNATURE_SIZE 1
 
-void DiceHexEncode(const uint8_t* in, size_t num_bytes, void* out,
-                   size_t out_size) {
-  const uint8_t kHexMap[16] = "0123456789abcdef";
-  size_t in_pos = 0;
-  size_t out_pos = 0;
-  uint8_t* out_bytes = out;
-  for (in_pos = 0; in_pos < num_bytes && out_pos < out_size; ++in_pos) {
-    out_bytes[out_pos++] = kHexMap[(in[in_pos] >> 4)];
-    if (out_pos < out_size) {
-      out_bytes[out_pos++] = kHexMap[in[in_pos] & 0xF];
-    }
-  }
-}
+#endif  // DICE_DICE_CONFIG_H_

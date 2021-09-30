@@ -12,29 +12,43 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// This is an implementation of the crypto operations that uses boringssl. The
+// algorithms used are SHA512, HKDF-SHA512, and Ed25519-SHA512.
+
 #include <stdint.h>
 
-#include "dice/boringssl_ops.h"
 #include "dice/dice.h"
+#include "dice/ops.h"
 #include "openssl/curve25519.h"
 #include "openssl/evp.h"
 #include "openssl/hkdf.h"
 #include "openssl/is_boringssl.h"
 #include "openssl/sha.h"
 
-DiceResult DiceBsslHashOp(const DiceOps* ops_not_used, const uint8_t* input,
-                          size_t input_size, uint8_t output[DICE_HASH_SIZE]) {
-  (void)ops_not_used;
+#if DICE_PRIVATE_KEY_SEED_SIZE != 32
+#error "Private key seed is expected to be 32 bytes."
+#endif
+#if DICE_PUBLIC_KEY_SIZE != 32
+#error "Ed25519 needs 32 bytes to store the public key."
+#endif
+#if DICE_PRIVATE_KEY_SIZE != 64
+#error "This Ed25519 implementation needs 64 bytes for the private key."
+#endif
+#if DICE_SIGNATURE_SIZE != 64
+#error "Ed25519 needs 64 bytes to store the signature."
+#endif
+
+DiceResult DiceHash(void* context_not_used, const uint8_t* input,
+                    size_t input_size, uint8_t output[DICE_HASH_SIZE]) {
+  (void)context_not_used;
   SHA512(input, input_size, output);
   return kDiceResultOk;
 }
 
-DiceResult DiceBsslKdfOp(const DiceOps* ops_not_used, size_t length,
-                         const uint8_t* ikm, size_t ikm_size,
-                         const uint8_t* salt, size_t salt_size,
-                         const uint8_t* info, size_t info_size,
-                         uint8_t* output) {
-  (void)ops_not_used;
+DiceResult DiceKdf(void* context_not_used, size_t length, const uint8_t* ikm,
+                   size_t ikm_size, const uint8_t* salt, size_t salt_size,
+                   const uint8_t* info, size_t info_size, uint8_t* output) {
+  (void)context_not_used;
   if (!HKDF(output, length, EVP_sha512(), ikm, ikm_size, salt, salt_size, info,
             info_size)) {
     return kDiceResultPlatformError;
@@ -42,51 +56,31 @@ DiceResult DiceBsslKdfOp(const DiceOps* ops_not_used, size_t length,
   return kDiceResultOk;
 }
 
-DiceResult DiceBsslEd25519KeypairFromSeed(
-    const DiceOps* ops_not_used, const uint8_t seed[DICE_PRIVATE_KEY_SEED_SIZE],
-    uint8_t public_key[DICE_PUBLIC_KEY_MAX_SIZE], size_t* public_key_size,
-    uint8_t private_key[DICE_PRIVATE_KEY_MAX_SIZE], size_t* private_key_size) {
-  (void)ops_not_used;
-#if DICE_PRIVATE_KEY_SEED_SIZE != 32
-#error "Private key seed is expected to be 32 bytes."
-#endif
-#if DICE_PUBLIC_KEY_MAX_SIZE < 32
-#error "Ed25519 needs 32 bytes to store the public key."
-#endif
-#if DICE_PRIVATE_KEY_MAX_SIZE < 64
-#error "This Ed25519 implementation needs  64 bytes for the private key."
-#endif
+DiceResult DiceKeypairFromSeed(void* context_not_used,
+                               const uint8_t seed[DICE_PRIVATE_KEY_SEED_SIZE],
+                               uint8_t public_key[DICE_PUBLIC_KEY_SIZE],
+                               uint8_t private_key[DICE_PRIVATE_KEY_SIZE]) {
+  (void)context_not_used;
   ED25519_keypair_from_seed(public_key, private_key, seed);
-  *public_key_size = 32;
-  *private_key_size = 64;
   return kDiceResultOk;
 }
 
-DiceResult DiceBsslEd25519Sign(const DiceOps* ops_not_used,
-                               const uint8_t* message, size_t message_size,
-                               const uint8_t* private_key,
-                               size_t private_key_size, size_t signature_size,
-                               uint8_t* signature) {
-  (void)ops_not_used;
-  if (private_key_size != 64 || signature_size != 64) {
-    return kDiceResultPlatformError;
-  }
+DiceResult DiceSign(void* context_not_used, const uint8_t* message,
+                    size_t message_size,
+                    const uint8_t private_key[DICE_PRIVATE_KEY_SIZE],
+                    uint8_t signature[DICE_SIGNATURE_SIZE]) {
+  (void)context_not_used;
   if (1 != ED25519_sign(signature, message, message_size, private_key)) {
     return kDiceResultPlatformError;
   }
   return kDiceResultOk;
 }
 
-DiceResult DiceBsslEd25519Verify(const DiceOps* ops_not_used,
-                                 const uint8_t* message, size_t message_size,
-                                 const uint8_t* signature,
-                                 size_t signature_size,
-                                 const uint8_t* public_key,
-                                 size_t public_key_size) {
-  (void)ops_not_used;
-  if (public_key_size != 32 || signature_size != 64) {
-    return kDiceResultPlatformError;
-  }
+DiceResult DiceVerify(void* context_not_used, const uint8_t* message,
+                      size_t message_size,
+                      const uint8_t signature[DICE_SIGNATURE_SIZE],
+                      const uint8_t public_key[DICE_PUBLIC_KEY_SIZE]) {
+  (void)context_not_used;
   if (1 != ED25519_verify(message, message_size, signature, public_key)) {
     return kDiceResultPlatformError;
   }

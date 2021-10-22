@@ -35,9 +35,9 @@
 #include "mbedtls/x509.h"
 #include "mbedtls/x509_crt.h"
 
-static const size_t kMaxCertificateSize = 2048;
-static const size_t kMaxExtensionSize = 2048;
-static const size_t kMaxKeyIdSize = 40;
+#define DICE_MAX_CERTIFICATE_SIZE 2048
+#define DICE_MAX_EXTENSION_SIZE 2048
+#define DICE_MAX_KEY_ID_SIZE 40
 
 static DiceResult SetupKeyPair(
     const uint8_t private_key_seed[DICE_PRIVATE_KEY_SEED_SIZE],
@@ -72,7 +72,7 @@ out:
 
 static DiceResult GetIdFromKey(void* context,
                                const mbedtls_pk_context* pk_context,
-                               uint8_t id[20]) {
+                               uint8_t id[DICE_ID_SIZE]) {
   uint8_t raw_public_key[33];
   size_t raw_public_key_size = 0;
   mbedtls_ecp_keypair* key = mbedtls_pk_ec(*pk_context);
@@ -87,17 +87,19 @@ static DiceResult GetIdFromKey(void* context,
 }
 
 // 54 byte name is prefix (13), hex id (40), and a null terminator.
-static void GetNameFromId(const uint8_t id[20], char name[54]) {
+static void GetNameFromId(const uint8_t id[DICE_ID_SIZE], char name[54]) {
   strcpy(name, "serialNumber=");
-  DiceHexEncode(id, /*num_bytes=*/20, (uint8_t*)&name[13], /*out_size=*/40);
+  DiceHexEncode(id, /*num_bytes=*/DICE_ID_SIZE, (uint8_t*)&name[13],
+                /*out_size=*/40);
   name[53] = '\0';
 }
 
-static DiceResult GetSubjectKeyIdFromId(const uint8_t id[20],
+static DiceResult GetSubjectKeyIdFromId(const uint8_t id[DICE_ID_SIZE],
                                         size_t buffer_size, uint8_t* buffer,
                                         size_t* actual_size) {
   uint8_t* pos = buffer + buffer_size;
-  int length_or_error = mbedtls_asn1_write_octet_string(&pos, buffer, id, 20);
+  int length_or_error =
+      mbedtls_asn1_write_octet_string(&pos, buffer, id, DICE_ID_SIZE);
   if (length_or_error < 0) {
     return kDiceResultPlatformError;
   }
@@ -126,11 +128,12 @@ static int AddAuthorityKeyIdEncoding(uint8_t** pos, uint8_t* start,
   return length;
 }
 
-static DiceResult GetAuthorityKeyIdFromId(const uint8_t id[20],
+static DiceResult GetAuthorityKeyIdFromId(const uint8_t id[DICE_ID_SIZE],
                                           size_t buffer_size, uint8_t* buffer,
                                           size_t* actual_size) {
   uint8_t* pos = buffer + buffer_size;
-  int length_or_error = mbedtls_asn1_write_raw_buffer(&pos, buffer, id, 20);
+  int length_or_error =
+      mbedtls_asn1_write_raw_buffer(&pos, buffer, id, DICE_ID_SIZE);
   if (length_or_error < 0) {
     return kDiceResultPlatformError;
   }
@@ -318,19 +321,13 @@ DiceResult DiceGenerateCertificate(
   mbedtls_mpi serial_number;
   mbedtls_mpi_init(&serial_number);
 
-  // These are 'variably modified' types so need to be declared upfront.
-  uint8_t authority_key_id[kMaxKeyIdSize];
-  uint8_t subject_key_id[kMaxKeyIdSize];
-  uint8_t dice_extension[kMaxExtensionSize];
-  uint8_t tmp_buffer[kMaxCertificateSize];
-
   // Derive key pairs and IDs.
   result = SetupKeyPair(authority_private_key_seed, &authority_key_context);
   if (result != kDiceResultOk) {
     goto out;
   }
 
-  uint8_t authority_id[20];
+  uint8_t authority_id[DICE_ID_SIZE];
   result = GetIdFromKey(context, &authority_key_context, authority_id);
   if (result != kDiceResultOk) {
     goto out;
@@ -339,6 +336,7 @@ DiceResult DiceGenerateCertificate(
   char authority_name[54];
   GetNameFromId(authority_id, authority_name);
 
+  uint8_t authority_key_id[DICE_MAX_KEY_ID_SIZE];
   size_t authority_key_id_size = 0;
   result = GetAuthorityKeyIdFromId(authority_id, sizeof(authority_key_id),
                                    authority_key_id, &authority_key_id_size);
@@ -350,7 +348,7 @@ DiceResult DiceGenerateCertificate(
     goto out;
   }
 
-  uint8_t subject_id[20];
+  uint8_t subject_id[DICE_ID_SIZE];
   result = GetIdFromKey(context, &subject_key_context, subject_id);
   if (result != kDiceResultOk) {
     goto out;
@@ -359,6 +357,7 @@ DiceResult DiceGenerateCertificate(
   char subject_name[54];
   GetNameFromId(subject_id, subject_name);
 
+  uint8_t subject_key_id[DICE_MAX_KEY_ID_SIZE];
   size_t subject_key_id_size = 0;
   result = GetSubjectKeyIdFromId(subject_id, sizeof(subject_key_id),
                                  subject_key_id, &subject_key_id_size);
@@ -366,6 +365,7 @@ DiceResult DiceGenerateCertificate(
     goto out;
   }
 
+  uint8_t dice_extension[DICE_MAX_EXTENSION_SIZE];
   size_t dice_extension_size = 0;
   result = GetDiceExtensionData(input_values, sizeof(dice_extension),
                                 dice_extension, &dice_extension_size);
@@ -440,6 +440,7 @@ DiceResult DiceGenerateCertificate(
   // This implementation is deterministic and assumes entropy is not available.
   // If this code is run where entropy is available, however, f_rng and p_rng
   // should be set appropriately.
+  uint8_t tmp_buffer[DICE_MAX_CERTIFICATE_SIZE];
   int length_or_error =
       mbedtls_x509write_crt_der(&cert_context, tmp_buffer, sizeof(tmp_buffer),
                                 /*f_rng=*/NULL, /*p_rng=*/NULL);

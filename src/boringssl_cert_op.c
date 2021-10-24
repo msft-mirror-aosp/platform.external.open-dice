@@ -31,6 +31,8 @@
 #include "openssl/x509.h"
 #include "openssl/x509v3.h"
 
+#define DICE_MAX_EXTENSION_SIZE 2048
+
 typedef struct DiceExtensionAsn1 {
   ASN1_OCTET_STRING* code_hash;
   ASN1_OCTET_STRING* code_descriptor;
@@ -54,8 +56,8 @@ ASN1_SEQUENCE(DiceExtensionAsn1) = {
 DECLARE_ASN1_FUNCTIONS(DiceExtensionAsn1)
 IMPLEMENT_ASN1_FUNCTIONS(DiceExtensionAsn1)
 
-static DiceResult AddStandardFields(X509* x509, const uint8_t subject_id[20],
-                                    const uint8_t authority_id[20]) {
+static DiceResult AddStandardFields(X509* x509, const uint8_t subject_id[DICE_ID_SIZE],
+                                    const uint8_t authority_id[DICE_ID_SIZE]) {
   // clang-format on
   DiceResult result = kDiceResultOk;
 
@@ -98,7 +100,7 @@ static DiceResult AddStandardFields(X509* x509, const uint8_t subject_id[20],
     goto out;
   }
 
-  serial_bn = BN_bin2bn(subject_id, 20, NULL);
+  serial_bn = BN_bin2bn(subject_id, DICE_ID_SIZE, NULL);
   if (!serial_bn) {
     result = kDiceResultPlatformError;
     goto out;
@@ -110,7 +112,7 @@ static DiceResult AddStandardFields(X509* x509, const uint8_t subject_id[20],
   }
 
   uint8_t id_hex[40];
-  DiceHexEncode(authority_id, 20, id_hex, sizeof(id_hex));
+  DiceHexEncode(authority_id, DICE_ID_SIZE, id_hex, sizeof(id_hex));
   if (!X509_NAME_add_entry_by_NID(issuer_name, NID_serialNumber, MBSTRING_UTF8,
                                   id_hex, sizeof(id_hex), 0, 0)) {
     result = kDiceResultPlatformError;
@@ -121,7 +123,7 @@ static DiceResult AddStandardFields(X509* x509, const uint8_t subject_id[20],
     goto out;
   }
 
-  DiceHexEncode(subject_id, 20, id_hex, sizeof(id_hex));
+  DiceHexEncode(subject_id, DICE_ID_SIZE, id_hex, sizeof(id_hex));
   if (!X509_NAME_add_entry_by_NID(subject_name, NID_serialNumber, MBSTRING_UTF8,
                                   id_hex, sizeof(id_hex), 0, 0)) {
     result = kDiceResultPlatformError;
@@ -174,9 +176,9 @@ out:
   return result;
 }
 
-static DiceResult AddStandardExtensions(X509* x509,
-                                        const uint8_t subject_id[20],
-                                        const uint8_t authority_id[20]) {
+static DiceResult AddStandardExtensions(
+    X509* x509, const uint8_t subject_id[DICE_ID_SIZE],
+    const uint8_t authority_id[DICE_ID_SIZE]) {
   DiceResult result = kDiceResultOk;
 
   // Initialize variables that are cleaned up on 'goto out'.
@@ -201,7 +203,8 @@ static DiceResult AddStandardExtensions(X509* x509,
     result = kDiceResultPlatformError;
     goto out;
   }
-  if (!ASN1_OCTET_STRING_set(authority_key_id->keyid, authority_id, 20)) {
+  if (!ASN1_OCTET_STRING_set(authority_key_id->keyid, authority_id,
+                             DICE_ID_SIZE)) {
     result = kDiceResultPlatformError;
     goto out;
   }
@@ -213,7 +216,7 @@ static DiceResult AddStandardExtensions(X509* x509,
     result = kDiceResultPlatformError;
     goto out;
   }
-  if (!ASN1_OCTET_STRING_set(subject_key_id, subject_id, 20)) {
+  if (!ASN1_OCTET_STRING_set(subject_key_id, subject_id, DICE_ID_SIZE)) {
     result = kDiceResultPlatformError;
     goto out;
   }
@@ -439,7 +442,6 @@ out:
 
 static DiceResult AddDiceExtension(const DiceInputValues* input_values,
                                    X509* x509) {
-  const size_t kMaxExtensionSize = 2048;
   const char* kDiceExtensionOid = "1.3.6.1.4.1.11129.2.1.24";
 
   // Initialize variables that are cleaned up on 'goto out'.
@@ -447,7 +449,7 @@ static DiceResult AddDiceExtension(const DiceInputValues* input_values,
   ASN1_OCTET_STRING* octets = NULL;
   X509_EXTENSION* extension = NULL;
 
-  uint8_t extension_buffer[kMaxExtensionSize];
+  uint8_t extension_buffer[DICE_MAX_EXTENSION_SIZE];
   size_t extension_size = 0;
   DiceResult result =
       GetDiceExtensionData(input_values, sizeof(extension_buffer),
@@ -497,7 +499,7 @@ out:
 }
 
 static DiceResult GetIdFromKey(void* context, const EVP_PKEY* key,
-                               uint8_t id[20]) {
+                               uint8_t id[DICE_ID_SIZE]) {
   uint8_t raw_public_key[32];
   size_t raw_public_key_size = sizeof(raw_public_key);
   if (!EVP_PKEY_get_raw_public_key(key, raw_public_key, &raw_public_key_size)) {
@@ -544,12 +546,12 @@ DiceResult DiceGenerateCertificate(
     goto out;
   }
 
-  uint8_t authority_id[20];
+  uint8_t authority_id[DICE_ID_SIZE];
   result = GetIdFromKey(context, authority_key, authority_id);
   if (result != kDiceResultOk) {
     goto out;
   }
-  uint8_t subject_id[20];
+  uint8_t subject_id[DICE_ID_SIZE];
   result = GetIdFromKey(context, subject_key, subject_id);
   if (result != kDiceResultOk) {
     goto out;

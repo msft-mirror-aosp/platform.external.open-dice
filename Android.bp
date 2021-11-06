@@ -43,6 +43,18 @@ cc_library_static {
     shared_libs: ["libcrypto"],
 }
 
+cc_library_static {
+    name: "libopen_dice_bcc",
+    host_supported: true,
+    srcs: [
+        "src/cbor_reader.c",
+        "src/android/bcc.c",
+    ],
+    static_libs: ["libopen_dice_cbor"],
+    export_static_lib_headers: ["libopen_dice_cbor"],
+    shared_libs: ["libcrypto"],
+}
+
 cc_test {
     name: "libopen_dice_test",
     host_supported: true,
@@ -68,6 +80,26 @@ cc_test {
     static_libs: ["libopen_dice_cbor"],
 }
 
+cc_test {
+    name: "libopen_dice_cbor_reader_test",
+    host_supported: true,
+    cflags: ["-DDICE_USE_GTEST"],
+    srcs: ["src/cbor_reader_test.cc"],
+    static_libs: ["libopen_dice_bcc"],
+}
+
+cc_test {
+    name: "libopen_dice_bcc_test",
+    host_supported: true,
+    cflags: ["-DDICE_USE_GTEST"],
+    srcs: ["src/android/bcc_test.cc"],
+    static_libs: [
+        "libopen_dice_bcc",
+        "libopen_dice_cbor",
+    ],
+    shared_libs: ["libcrypto"],
+}
+
 // TODO: cbor_cert_op_test after resolving COSE dependency
 
 cc_fuzz {
@@ -78,9 +110,27 @@ cc_fuzz {
 }
 
 cc_fuzz {
+    name: "libopen_dice_cbor_reader_fuzzer",
+    host_supported: true,
+    srcs: ["src/cbor_reader_fuzzer.cc"],
+    static_libs: ["libopen_dice_bcc"],
+}
+
+cc_fuzz {
     name: "libopen_dice_cbor_fuzzer",
     host_supported: true,
     srcs: ["src/fuzzer.cc"],
     static_libs: ["libopen_dice_cbor"],
+    shared_libs: ["libcrypto"],
+}
+
+cc_fuzz {
+    name: "libopen_dice_bcc_fuzzer",
+    host_supported: true,
+    srcs: ["src/android/bcc_fuzzer.cc"],
+    static_libs: [
+        "libopen_dice_bcc",
+        "libopen_dice_cbor",
+    ],
     shared_libs: ["libcrypto"],
 }

@@ -19,6 +19,7 @@ LOCAL_DIR := $(GET_LOCAL_DIR)
 MODULE := $(LOCAL_DIR)
 
 MODULE_SRCS := \
+	$(LOCAL_DIR)/src/android/bcc.c \
 	$(LOCAL_DIR)/src/boringssl_hash_kdf_sign_ops.c \
 	$(LOCAL_DIR)/src/cbor_cert_op.c \
 	$(LOCAL_DIR)/src/cbor_writer.c \

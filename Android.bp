@@ -12,18 +12,21 @@ license {
 cc_library_headers {
     name: "libopen_dice_headers",
     host_supported: true,
+    vendor_available: true,
     export_include_dirs: ["include"],
 }
 
 cc_library_headers {
     name: "libopen_dice_boringssl_ed25519_headers",
     host_supported: true,
+    vendor_available: true,
     export_include_dirs: ["include/dice/config/boringssl_ed25519"],
 }
 
 cc_library_static {
     name: "libopen_dice_cbor",
     host_supported: true,
+    vendor_available: true,
     srcs: [
         "src/boringssl_hash_kdf_sign_ops.c",
         "src/cbor_cert_op.c",
@@ -46,6 +49,7 @@ cc_library_static {
 cc_library_static {
     name: "libopen_dice_bcc",
     host_supported: true,
+    vendor_available: true,
     srcs: [
         "src/cbor_reader.c",
         "src/android/bcc.c",
@@ -133,4 +137,97 @@ cc_fuzz {
         "libopen_dice_cbor",
     ],
     shared_libs: ["libcrypto"],
+}
+
+rust_bindgen {
+    name: "libopen_dice_cbor_bindgen",
+    wrapper_src: "rust/dice.h",
+    crate_name: "open_dice_cbor_bindgen",
+    source_stem: "bindings",
+    header_libs: [
+        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_headers",
+    ],
+
+    // Generate bindings only for the symbols that are actually exported (see exported.map.txt).
+    // This makes the generated bindings much more concise and improves compilation
+    // time.
+    bindgen_flags: [
+        "--allowlist-function=DiceDeriveCdiPrivateKeySeed",
+        "--allowlist-function=DiceDeriveCdiCertificateId",
+        "--allowlist-function=DiceMainFlow",
+        "--allowlist-function=DiceHash",
+        "--allowlist-function=DiceKdf",
+        "--allowlist-function=DiceKeypairFromSeed",
+        "--allowlist-function=DiceSign",
+        "--allowlist-function=DiceVerify",
+        "--allowlist-function=DiceGenerateCertificate",
+
+        // We also need some constants in addition to the functions.
+        "--allowlist-var=DICE_CDI_SIZE",
+        "--allowlist-var=DICE_HASH_SIZE",
+        "--allowlist-var=DICE_HIDDEN_SIZE",
+        "--allowlist-var=DICE_INLINE_CONFIG_SIZE",
+        "--allowlist-var=DICE_PRIVATE_KEY_SEED_SIZE",
+        "--allowlist-var=DICE_ID_SIZE",
+        "--allowlist-var=DICE_PUBLIC_KEY_SIZE",
+        "--allowlist-var=DICE_PRIVATE_KEY_SIZE",
+        "--allowlist-var=DICE_SIGNATURE_SIZE",
+    ],
+
+    // This is mainly to run layout tests for generated bindings on the host.
+    host_supported: true,
+    vendor_available: true,
+}
+
+rust_bindgen {
+    name: "libopen_dice_bcc_bindgen",
+    wrapper_src: "rust/android/bcc.h",
+    crate_name: "open_dice_bcc_bindgen",
+    source_stem: "bindings",
+    header_libs: [
+        "libopen_dice_headers",
+    ],
+
+    // Generate bindings only for the symbols that are actually exported (see exported.map.txt).
+    // This makes the generated bindings much more concise and improves compilation
+    // time.
+    bindgen_flags: [
+        "--allowlist-function=BccFormatConfigDescriptor",
+        "--allowlist-function=BccMainFlow",
+        "--allowlist-function=BccHandoverMainFlow",
+
+        // We also need some constants in addition to the functions.
+        "--allowlist-var=BCC_INPUT_COMPONENT_NAME",
+        "--allowlist-var=BCC_INPUT_COMPONENT_VERSION",
+        "--allowlist-var=BCC_INPUT_RESETTABLE",
+    ],
+
+    // This is mainly to run layout tests for generated bindings on the host.
+    host_supported: true,
+    vendor_available: true,
+}
+
+rust_test {
+    name: "libopen_dice_cbor_bindgen_test",
+    srcs: [
+        ":libopen_dice_cbor_bindgen",
+    ],
+    crate_name: "open_dice_cbor_bindgen_test",
+    test_suites: ["general-tests"],
+    auto_gen_config: true,
+    clippy_lints: "none",
+    lints: "none",
+}
+
+rust_test {
+    name: "libopen_dice_bcc_bindgen_test",
+    srcs: [
+        ":libopen_dice_bcc_bindgen",
+    ],
+    crate_name: "open_dice_bcc_bindgen_test",
+    test_suites: ["general-tests"],
+    auto_gen_config: true,
+    clippy_lints: "none",
+    lints: "none",
 }

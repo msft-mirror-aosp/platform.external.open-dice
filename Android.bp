@@ -153,6 +153,8 @@ rust_bindgen {
     // This makes the generated bindings much more concise and improves compilation
     // time.
     bindgen_flags: [
+        "--size_t-is-usize",
+
         "--allowlist-function=DiceDeriveCdiPrivateKeySeed",
         "--allowlist-function=DiceDeriveCdiCertificateId",
         "--allowlist-function=DiceMainFlow",
@@ -193,6 +195,8 @@ rust_bindgen {
     // This makes the generated bindings much more concise and improves compilation
     // time.
     bindgen_flags: [
+        "--size_t-is-usize",
+
         "--allowlist-function=BccFormatConfigDescriptor",
         "--allowlist-function=BccMainFlow",
         "--allowlist-function=BccHandoverMainFlow",
@@ -201,6 +205,16 @@ rust_bindgen {
         "--allowlist-var=BCC_INPUT_COMPONENT_NAME",
         "--allowlist-var=BCC_INPUT_COMPONENT_VERSION",
         "--allowlist-var=BCC_INPUT_RESETTABLE",
+
+        // Prevent DiceInputValues from being generated a second time and
+        // import it instead from open_dice_cbor_bindgen.
+        "--blocklist-type=DiceInputValues_",
+        "--blocklist-type=DiceInputValues",
+        "--raw-line", "pub use open_dice_cbor_bindgen::DiceInputValues;",
+    ],
+
+    rustlibs: [
+        "libopen_dice_cbor_bindgen",
     ],
 
     // This is mainly to run layout tests for generated bindings on the host.
@@ -226,6 +240,11 @@ rust_test {
         ":libopen_dice_bcc_bindgen",
     ],
     crate_name: "open_dice_bcc_bindgen_test",
+
+    rustlibs: [
+        "libopen_dice_cbor_bindgen",
+    ],
+
     test_suites: ["general-tests"],
     auto_gen_config: true,
     clippy_lints: "none",

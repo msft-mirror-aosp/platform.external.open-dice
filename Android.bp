@@ -28,7 +28,8 @@ cc_library_static {
     host_supported: true,
     vendor_available: true,
     srcs: [
-        "src/boringssl_hash_kdf_sign_ops.c",
+        "src/boringssl_hash_kdf_ops.c",
+        "src/boringssl_ed25519_ops.c",
         "src/cbor_cert_op.c",
         "src/cbor_writer.c",
         "src/clear_memory.c",
@@ -210,7 +211,8 @@ rust_bindgen {
         // import it instead from open_dice_cbor_bindgen.
         "--blocklist-type=DiceInputValues_",
         "--blocklist-type=DiceInputValues",
-        "--raw-line", "pub use open_dice_cbor_bindgen::DiceInputValues;",
+        "--raw-line",
+        "pub use open_dice_cbor_bindgen::DiceInputValues;",
     ],
 
     rustlibs: [

@@ -18,7 +18,9 @@
 
 #include "dice/cbor_reader.h"
 #include "dice/cbor_writer.h"
+#include "dice/ops/trait/cose.h"
 #include "dice/dice.h"
+#include "dice/ops.h"
 
 // Completely gratuitous bit twiddling.
 static size_t PopulationCount(uint32_t n) {
@@ -127,53 +129,90 @@ DiceResult BccMainFlow(void* context,
   return kDiceResultOk;
 }
 
+static DiceResult BccMainFlowWithNewBcc(
+    void* context, const uint8_t current_cdi_attest[DICE_CDI_SIZE],
+    const uint8_t current_cdi_seal[DICE_CDI_SIZE],
+    const DiceInputValues* input_values, size_t buffer_size, uint8_t* buffer,
+    size_t* bcc_size, uint8_t next_cdi_attest[DICE_CDI_SIZE],
+    uint8_t next_cdi_seal[DICE_CDI_SIZE]) {
+  uint8_t current_cdi_private_key_seed[DICE_PRIVATE_KEY_SEED_SIZE];
+  uint8_t attestation_public_key[DICE_PUBLIC_KEY_SIZE];
+  uint8_t attestation_private_key[DICE_PRIVATE_KEY_SIZE];
+  // Derive an asymmetric private key seed from the current attestation CDI
+  // value.
+  DiceResult result = DiceDeriveCdiPrivateKeySeed(context, current_cdi_attest,
+                                                  current_cdi_private_key_seed);
+  if (result != kDiceResultOk) {
+    goto out;
+  }
+  // Derive attestation key pair.
+  result = DiceKeypairFromSeed(context, current_cdi_private_key_seed,
+                               attestation_public_key, attestation_private_key);
+  if (result != kDiceResultOk) {
+    goto out;
+  }
+
+  // Consruct the BCC from the attestation public key and the next CDI
+  // certificate.
+  struct CborOut out;
+  CborOutInit(buffer, buffer_size, &out);
+  CborWriteArray(2, &out);
+  if (CborOutOverflowed(&out)) {
+    result = kDiceResultBufferTooSmall;
+    goto out;
+  }
+  size_t encoded_size_used = CborOutSize(&out);
+  buffer += encoded_size_used;
+  buffer_size -= encoded_size_used;
+
+  size_t encoded_pub_key_size = 0;
+  result = DiceCoseEncodePublicKey(context, attestation_public_key, buffer_size,
+                                   buffer, &encoded_pub_key_size);
+  if (result != kDiceResultOk) {
+    goto out;
+  }
+
+  buffer += encoded_pub_key_size;
+  buffer_size -= encoded_pub_key_size;
+
+  result = DiceMainFlow(context, current_cdi_attest, current_cdi_seal,
+                        input_values, buffer_size, buffer, bcc_size,
+                        next_cdi_attest, next_cdi_seal);
+  if (result != kDiceResultOk) {
+    return result;
+  }
+  *bcc_size += encoded_size_used + encoded_pub_key_size;
+
+out:
+  DiceClearMemory(context, sizeof(current_cdi_private_key_seed),
+                  current_cdi_private_key_seed);
+  DiceClearMemory(context, sizeof(attestation_private_key),
+                  attestation_private_key);
+
+  return result;
+}
+
+static const int64_t kCdiAttestLabel = 1;
+static const int64_t kCdiSealLabel = 2;
+static const int64_t kBccLabel = 3;
+
 DiceResult BccHandoverMainFlow(void* context, const uint8_t* bcc_handover,
                                size_t bcc_handover_size,
                                const DiceInputValues* input_values,
                                size_t buffer_size, uint8_t* buffer,
                                size_t* actual_size) {
-  static const int64_t kCdiAttestLabel = 1;
-  static const int64_t kCdiSealLabel = 2;
-  static const int64_t kBccLabel = 3;
-
   DiceResult result;
   const uint8_t* current_cdi_attest;
   const uint8_t* current_cdi_seal;
   const uint8_t* bcc;
+  size_t bcc_size;
 
-  // Extract details from the handover data.
-  //
-  // BccHandover = {
-  //   1 : bstr .size 32,     ; CDI_Attest
-  //   2 : bstr .size 32,     ; CDI_Seal
-  //   3 : Bcc,               ; Certificate chain
-  // }
-  struct CborIn in;
-  int64_t label;
-  size_t item_size;
-  CborInInit(bcc_handover, bcc_handover_size, &in);
-  if (CborReadMap(&in, &item_size) != CBOR_READ_RESULT_OK || item_size < 3 ||
-      // Read the attestation CDI.
-      CborReadInt(&in, &label) != CBOR_READ_RESULT_OK ||
-      label != kCdiAttestLabel ||
-      CborReadBstr(&in, &item_size, &current_cdi_attest) !=
-          CBOR_READ_RESULT_OK ||
-      item_size != DICE_CDI_SIZE ||
-      // Read the sealing CDI.
-      CborReadInt(&in, &label) != CBOR_READ_RESULT_OK ||
-      label != kCdiSealLabel ||
-      CborReadBstr(&in, &item_size, &current_cdi_seal) != CBOR_READ_RESULT_OK ||
-      item_size != DICE_CDI_SIZE ||
-      // Read the BCC.
-      CborReadInt(&in, &label) != CBOR_READ_RESULT_OK || label != kBccLabel) {
+  result =
+      BccHandoverParse(bcc_handover, bcc_handover_size, &current_cdi_attest,
+                       &current_cdi_seal, &bcc, &bcc_size);
+  if (result != kDiceResultOk) {
     return kDiceResultInvalidInput;
   }
-  size_t bcc_start = CborInOffset(&in);
-  bcc = bcc_handover + bcc_start;
-  if (CborReadSkip(&in) != CBOR_READ_RESULT_OK) {
-    return kDiceResultInvalidInput;
-  }
-  size_t bcc_size = CborInOffset(&in) - bcc_start;
 
   // Write the new handover data.
   struct CborOut out;
@@ -189,14 +228,72 @@ DiceResult BccHandoverMainFlow(void* context, const uint8_t* bcc_handover,
     return kDiceResultBufferTooSmall;
   }
 
-  result = BccMainFlow(context, current_cdi_attest, current_cdi_seal, bcc,
-                       bcc_size, input_values, buffer_size - CborOutSize(&out),
-                       buffer + CborOutSize(&out), &bcc_size, next_cdi_attest,
-                       next_cdi_seal);
+  if (bcc_size != 0) {
+    // If BCC is present in the bcc_handover, append the next certificate to the
+    // existing BCC.
+    result = BccMainFlow(context, current_cdi_attest, current_cdi_seal, bcc,
+                         bcc_size, input_values, buffer_size - CborOutSize(&out),
+                         buffer + CborOutSize(&out), &bcc_size, next_cdi_attest,
+                         next_cdi_seal);
+  } else {
+    // If BCC is not present in the bcc_handover, construct BCC from the public key
+    // derived from the current CDI attest and the next CDI certificate.
+    result = BccMainFlowWithNewBcc(
+        context, current_cdi_attest, current_cdi_seal, input_values,
+        buffer_size - CborOutSize(&out), buffer + CborOutSize(&out), &bcc_size,
+        next_cdi_attest, next_cdi_seal);
+  }
   if (result != kDiceResultOk) {
-    return result;
+      return result;
+  }
+  *actual_size = CborOutSize(&out) + bcc_size;
+  return kDiceResultOk;
+}
+
+DiceResult BccHandoverParse(const uint8_t* bcc_handover,
+                            size_t bcc_handover_size,
+                            const uint8_t** cdi_attest,
+                            const uint8_t** cdi_seal, const uint8_t** bcc,
+                            size_t* bcc_size) {
+  // Extract details from the handover data.
+  //
+  // BccHandover = {
+  //   1 : bstr .size 32,     ; CDI_Attest
+  //   2 : bstr .size 32,     ; CDI_Seal
+  //   ? 3 : Bcc,             ; Certificate chain
+  // }
+  struct CborIn in;
+  int64_t label;
+  size_t num_pairs;
+  size_t item_size;
+  CborInInit(bcc_handover, bcc_handover_size, &in);
+  if (CborReadMap(&in, &num_pairs) != CBOR_READ_RESULT_OK || num_pairs < 2 ||
+      // Read the attestation CDI.
+      CborReadInt(&in, &label) != CBOR_READ_RESULT_OK ||
+      label != kCdiAttestLabel ||
+      CborReadBstr(&in, &item_size, cdi_attest) != CBOR_READ_RESULT_OK ||
+      item_size != DICE_CDI_SIZE ||
+      // Read the sealing CDI.
+      CborReadInt(&in, &label) != CBOR_READ_RESULT_OK ||
+      label != kCdiSealLabel ||
+      CborReadBstr(&in, &item_size, cdi_seal) != CBOR_READ_RESULT_OK ||
+      item_size != DICE_CDI_SIZE) {
+    return kDiceResultInvalidInput;
   }
 
-  *actual_size = CborOutSize(&out) + bcc_size;
+  *bcc = NULL;
+  *bcc_size = 0;
+  if (num_pairs >= 3 && CborReadInt(&in, &label) == CBOR_READ_RESULT_OK) {
+    if (label == kBccLabel) {
+      // Calculate the BCC size, if the BCC is present in the BccHandover.
+      size_t bcc_start = CborInOffset(&in);
+      if (CborReadSkip(&in) != CBOR_READ_RESULT_OK) {
+        return kDiceResultInvalidInput;
+      }
+      *bcc = bcc_handover + bcc_start;
+      *bcc_size = CborInOffset(&in) - bcc_start;
+    }
+  }
+
   return kDiceResultOk;
 }

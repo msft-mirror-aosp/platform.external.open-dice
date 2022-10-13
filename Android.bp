@@ -31,6 +31,25 @@ rust_defaults {
         "com.android.compos",
         "com.android.virt",
     ],
+    bindgen_flags: [
+        "--use-core",
+        "--ctypes-prefix=core::ffi",
+        "--raw-line=#![no_std]",
+    ],
+    no_stdlibs: true,
+    prefer_rlib: true,
+    stdlibs: [
+        "libcore.rust_sysroot",
+        "libcompiler_builtins.rust_sysroot",
+    ],
+    target: {
+        glibc: {
+            enabled: false,
+        },
+        darwin: {
+            enabled: false,
+        },
+    },
 }
 
 cc_library_headers {
@@ -163,7 +182,10 @@ cc_fuzz {
 rust_bindgen {
     name: "libopen_dice_cbor_bindgen",
     defaults: ["libopen_dice.rust_defaults"],
-    visibility: ["//system/security/diced/open_dice_cbor"],
+    visibility: [
+        "//system/security/diced/open_dice_cbor",
+        "//packages/modules/Virtualization:__subpackages__",
+    ],
     wrapper_src: "rust/dice.h",
     crate_name: "open_dice_cbor_bindgen",
     source_stem: "bindings",
@@ -204,7 +226,10 @@ rust_bindgen {
 rust_bindgen {
     name: "libopen_dice_bcc_bindgen",
     defaults: ["libopen_dice.rust_defaults"],
-    visibility: ["//system/security/diced/open_dice_cbor"],
+    visibility: [
+        "//system/security/diced/open_dice_cbor",
+        "//packages/modules/Virtualization:__subpackages__",
+    ],
     wrapper_src: "rust/android/bcc.h",
     crate_name: "open_dice_bcc_bindgen",
     source_stem: "bindings",

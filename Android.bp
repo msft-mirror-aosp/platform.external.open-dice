@@ -260,6 +260,7 @@ rust_defaults {
         "--allowlist-function=BccFormatConfigDescriptor",
         "--allowlist-function=BccMainFlow",
         "--allowlist-function=BccHandoverMainFlow",
+        "--allowlist-function=BccHandoverParse",
 
         // We also need some constants in addition to the functions.
         "--allowlist-var=BCC_INPUT_COMPONENT_NAME",

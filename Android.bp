@@ -202,6 +202,8 @@ rust_defaults {
     // time.
     bindgen_flags: [
         "--size_t-is-usize",
+        "--rustified-enum DiceConfigType",
+        "--rustified-enum DiceMode",
 
         "--allowlist-function=DiceDeriveCdiPrivateKeySeed",
         "--allowlist-function=DiceDeriveCdiCertificateId",
@@ -229,7 +231,7 @@ rust_defaults {
 rust_bindgen {
     name: "libopen_dice_cbor_bindgen",
     defaults: ["libopen_dice_cbor_bindgen.rust_defaults"],
-    visibility: ["//system/security/diced/open_dice_cbor"],
+    visibility: ["//system/security/diced:__subpackages__"],
 }
 
 rust_bindgen {
@@ -238,7 +240,10 @@ rust_bindgen {
         "libopen_dice_cbor_bindgen.rust_defaults",
         "libopen_dice_bindgen_nostd.rust_defaults",
     ],
-    visibility: ["//packages/modules/Virtualization:__subpackages__"],
+    visibility: [
+        "//system/security/diced:__subpackages__",
+        "//packages/modules/Virtualization:__subpackages__",
+    ],
 }
 
 rust_defaults {

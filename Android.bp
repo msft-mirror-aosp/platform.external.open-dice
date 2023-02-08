@@ -295,7 +295,7 @@ rust_bindgen {
     rustlibs: [
         "libopen_dice_cbor_bindgen",
     ],
-    visibility: ["//system/security/diced/open_dice_cbor"],
+    visibility: ["//system/security/diced:__subpackages__"],
 }
 
 rust_bindgen {
@@ -307,7 +307,10 @@ rust_bindgen {
     rustlibs: [
         "libopen_dice_cbor_bindgen_nostd",
     ],
-    visibility: ["//packages/modules/Virtualization:__subpackages__"],
+    visibility: [
+        "//packages/modules/Virtualization:__subpackages__",
+        "//system/security/diced:__subpackages__",
+    ],
 }
 
 rust_test {

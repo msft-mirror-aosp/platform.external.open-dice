@@ -1,4 +1,5 @@
-#define USE_EDDSA
+#define USE_ECDSA_SHA_384
+#define PUBLIC_KEY_SIZE 96
 
 #define INCLUDE_ENCRYPT 0
 #define INCLUDE_ENCRYPT0 0

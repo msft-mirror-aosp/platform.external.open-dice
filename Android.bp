@@ -51,8 +51,8 @@ cc_library_headers {
     export_include_dirs: ["include/dice/config/boringssl_ecdsa_p384"],
 }
 
-cc_library_static {
-    name: "libopen_dice_cbor",
+cc_defaults {
+    name: "libopen_dice_cbor.cc_defaults",
     defaults: ["libopen_dice.cc_defaults"],
     srcs: [
         "src/boringssl_hash_kdf_ops.c",
@@ -60,7 +60,6 @@ cc_library_static {
         "src/cbor_cert_op.c",
         "src/cbor_ed25519_cert_op.c",
         "src/cbor_writer.c",
-        "src/clear_memory.c",
         "src/dice.c",
         "src/utils.c",
     ],
@@ -71,6 +70,14 @@ cc_library_static {
     export_header_lib_headers: [
         "libopen_dice_boringssl_ed25519_headers",
         "libopen_dice_headers",
+    ],
+}
+
+cc_library {
+    name: "libopen_dice_cbor",
+    defaults: ["libopen_dice_cbor.cc_defaults"],
+    srcs: [
+        "src/clear_memory.c",
     ],
     shared_libs: ["libcrypto"],
 }
@@ -100,16 +107,41 @@ cc_library_static {
     shared_libs: ["libcrypto"],
 }
 
+// Version of the library missing DiceClearMemory, for baremetal client code.
 cc_library_static {
-    name: "libopen_dice_bcc",
+    name: "libopen_dice_cbor_baremetal",
+    defaults: ["libopen_dice_cbor.cc_defaults"],
+    allow_undefined_symbols: true,
+    static_libs: ["libcrypto_baremetal"],
+}
+
+cc_defaults {
+    name: "libopen_dice_bcc.cc_defaults",
     defaults: ["libopen_dice.cc_defaults"],
     srcs: [
         "src/cbor_reader.c",
         "src/android/bcc.c",
     ],
-    static_libs: ["libopen_dice_cbor"],
-    export_static_lib_headers: ["libopen_dice_cbor"],
-    shared_libs: ["libcrypto"],
+}
+
+cc_library {
+    name: "libopen_dice_bcc",
+    defaults: ["libopen_dice_bcc.cc_defaults"],
+    export_shared_lib_headers: ["libopen_dice_cbor"],
+    shared_libs: [
+        "libcrypto",
+        "libopen_dice_cbor",
+    ],
+}
+
+cc_library_static {
+    name: "libopen_dice_bcc_baremetal",
+    defaults: ["libopen_dice_bcc.cc_defaults"],
+    export_static_lib_headers: ["libopen_dice_cbor_baremetal"],
+    static_libs: [
+        "libcrypto_baremetal",
+        "libopen_dice_cbor_baremetal",
+    ],
 }
 
 cc_library_static {
@@ -302,10 +334,6 @@ rust_defaults {
     wrapper_src: "rust/dice.h",
     crate_name: "open_dice_cbor_bindgen",
     source_stem: "bindings",
-    header_libs: [
-        "libopen_dice_boringssl_ed25519_headers",
-        "libopen_dice_headers",
-    ],
 
     // Generate bindings only for the symbols that are actually exported (see exported.map.txt).
     // This makes the generated bindings much more concise and improves compilation
@@ -342,6 +370,7 @@ rust_defaults {
 rust_bindgen {
     name: "libopen_dice_cbor_bindgen",
     defaults: ["libopen_dice_cbor_bindgen.rust_defaults"],
+    whole_static_libs: ["libopen_dice_cbor"],
     visibility: ["//system/security/diced:__subpackages__"],
 }
 
@@ -351,6 +380,7 @@ rust_bindgen {
         "libopen_dice_cbor_bindgen.rust_defaults",
         "libopen_dice_bindgen_nostd.rust_defaults",
     ],
+    whole_static_libs: ["libopen_dice_cbor_baremetal"],
     visibility: [
         "//system/security/diced:__subpackages__",
         "//packages/modules/Virtualization:__subpackages__",
@@ -363,9 +393,6 @@ rust_defaults {
     wrapper_src: "rust/android/bcc.h",
     crate_name: "open_dice_bcc_bindgen",
     source_stem: "bindings",
-    header_libs: [
-        "libopen_dice_headers",
-    ],
 
     // Generate bindings only for the symbols that are actually exported (see exported.map.txt).
     // This makes the generated bindings much more concise and improves compilation
@@ -405,6 +432,7 @@ rust_bindgen {
     rustlibs: [
         "libopen_dice_cbor_bindgen",
     ],
+    whole_static_libs: ["libopen_dice_bcc"],
     visibility: ["//system/security/diced:__subpackages__"],
 }
 
@@ -417,6 +445,7 @@ rust_bindgen {
     rustlibs: [
         "libopen_dice_cbor_bindgen_nostd",
     ],
+    whole_static_libs: ["libopen_dice_bcc_baremetal"],
     visibility: [
         "//packages/modules/Virtualization:__subpackages__",
         "//system/security/diced:__subpackages__",

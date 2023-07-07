@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,7 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#pragma once
+#ifndef DICE_CONFIG_H_
+#define DICE_CONFIG_H_
 
-#include <dice/dice.h>
-#include <dice/ops.h>
+// ECDSA P384
+// From table 1 of RFC 9053
+#define DICE_COSE_KEY_ALG_VALUE (-35)
+#define DICE_PUBLIC_KEY_SIZE 96
+#define DICE_PRIVATE_KEY_SIZE 48
+#define DICE_SIGNATURE_SIZE 96
+
+#endif  // DICE_DICE_CONFIG_H_

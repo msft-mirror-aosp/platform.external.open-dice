@@ -39,17 +39,48 @@ cc_library_headers {
     export_include_dirs: ["include/dice/config/boringssl_ecdsa_p384"],
 }
 
-cc_defaults {
-    name: "libopen_dice_cbor.cc_defaults",
-    defaults: ["libopen_dice.cc_defaults"],
+filegroup {
+    name: "libopen_dice_common_srcs",
     srcs: [
-        "src/boringssl_hash_kdf_ops.c",
-        "src/boringssl_ed25519_ops.c",
-        "src/cbor_cert_op.c",
-        "src/cbor_ed25519_cert_op.c",
-        "src/cbor_writer.c",
+        "src/clear_memory.c",
         "src/dice.c",
         "src/utils.c",
+    ],
+}
+
+filegroup {
+    name: "libopen_dice_cbor_common_srcs",
+    srcs: [
+        "src/boringssl_hash_kdf_ops.c",
+        "src/cbor_cert_op.c",
+        "src/cbor_writer.c",
+    ],
+}
+
+filegroup {
+    name: "libopen_dice_cbor_ed25519_srcs",
+    srcs: [
+        "src/boringssl_ed25519_ops.c",
+        "src/cbor_ed25519_cert_op.c",
+    ],
+}
+
+filegroup {
+    name: "libopen_dice_cbor_p384_srcs",
+    srcs: [
+        "src/boringssl_ecdsa_utils.c",
+        "src/boringssl_p384_ops.c",
+        "src/cbor_p384_cert_op.c",
+    ],
+}
+
+cc_library {
+    name: "libopen_dice_cbor",
+    defaults: ["libopen_dice.cc_defaults"],
+    srcs: [
+        ":libopen_dice_cbor_common_srcs",
+        ":libopen_dice_cbor_ed25519_srcs",
+        ":libopen_dice_common_srcs",
     ],
     header_libs: [
         "libopen_dice_boringssl_ed25519_headers",
@@ -59,14 +90,6 @@ cc_defaults {
         "libopen_dice_boringssl_ed25519_headers",
         "libopen_dice_headers",
     ],
-}
-
-cc_library {
-    name: "libopen_dice_cbor",
-    defaults: ["libopen_dice_cbor.cc_defaults"],
-    srcs: [
-        "src/clear_memory.c",
-    ],
     shared_libs: ["libcrypto"],
 }
 
@@ -74,15 +97,9 @@ cc_library_static {
     name: "libopen_dice_cbor_p384",
     defaults: ["libopen_dice.cc_defaults"],
     srcs: [
-        "src/boringssl_hash_kdf_ops.c",
-        "src/boringssl_ecdsa_utils.c",
-        "src/boringssl_p384_ops.c",
-        "src/cbor_cert_op.c",
-        "src/cbor_p384_cert_op.c",
-        "src/cbor_writer.c",
-        "src/clear_memory.c",
-        "src/dice.c",
-        "src/utils.c",
+        ":libopen_dice_cbor_common_srcs",
+        ":libopen_dice_cbor_p384_srcs",
+        ":libopen_dice_common_srcs",
     ],
     header_libs: [
         "libopen_dice_boringssl_ecdsa_p384_headers",
@@ -98,14 +115,26 @@ cc_library_static {
 // Version of the library missing DiceClearMemory, for baremetal client code.
 cc_library_static {
     name: "libopen_dice_cbor_baremetal",
-    defaults: ["libopen_dice_cbor.cc_defaults"],
+    srcs: [
+        ":libopen_dice_cbor_common_srcs",
+        ":libopen_dice_cbor_ed25519_srcs",
+        ":libopen_dice_common_srcs",
+    ],
+    exclude_srcs: ["src/clear_memory.c"],
     allow_undefined_symbols: true,
+    header_libs: [
+        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_headers",
+    ],
+    export_header_lib_headers: [
+        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_headers",
+    ],
     static_libs: ["libcrypto_baremetal"],
 }
 
-cc_defaults {
-    name: "libopen_dice_bcc.cc_defaults",
-    defaults: ["libopen_dice.cc_defaults"],
+filegroup {
+    name: "libopen_dice_bcc_srcs",
     srcs: [
         "src/cbor_reader.c",
         "src/android/bcc.c",
@@ -114,7 +143,8 @@ cc_defaults {
 
 cc_library {
     name: "libopen_dice_bcc",
-    defaults: ["libopen_dice_bcc.cc_defaults"],
+    defaults: ["libopen_dice.cc_defaults"],
+    srcs: [":libopen_dice_bcc_srcs"],
     export_shared_lib_headers: ["libopen_dice_cbor"],
     shared_libs: [
         "libcrypto",
@@ -124,7 +154,7 @@ cc_library {
 
 cc_library_static {
     name: "libopen_dice_bcc_baremetal",
-    defaults: ["libopen_dice_bcc.cc_defaults"],
+    srcs: [":libopen_dice_bcc_srcs"],
     export_static_lib_headers: ["libopen_dice_cbor_baremetal"],
     static_libs: [
         "libcrypto_baremetal",
@@ -149,10 +179,8 @@ cc_test {
     host_supported: true,
     cflags: ["-DDICE_USE_GTEST"],
     srcs: [
-        "src/clear_memory.c",
+        ":libopen_dice_common_srcs",
         "src/dice_test.cc",
-        "src/dice.c",
-        "src/utils.c",
     ],
     header_libs: [
         "libopen_dice_boringssl_ed25519_headers",
@@ -166,10 +194,8 @@ cc_test {
     host_supported: true,
     cflags: ["-DDICE_USE_GTEST"],
     srcs: [
-        "src/clear_memory.c",
+        ":libopen_dice_common_srcs",
         "src/dice_test.cc",
-        "src/dice.c",
-        "src/utils.c",
     ],
     header_libs: [
         "libopen_dice_boringssl_ecdsa_p384_headers",

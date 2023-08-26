@@ -134,17 +134,17 @@ cc_library_static {
 }
 
 filegroup {
-    name: "libopen_dice_bcc_srcs",
+    name: "libopen_dice_android_srcs",
     srcs: [
         "src/cbor_reader.c",
-        "src/android/bcc.c",
+        "src/android.c",
     ],
 }
 
 cc_library {
-    name: "libopen_dice_bcc",
+    name: "libopen_dice_android",
     defaults: ["libopen_dice.cc_defaults"],
-    srcs: [":libopen_dice_bcc_srcs"],
+    srcs: [":libopen_dice_android_srcs"],
     export_shared_lib_headers: ["libopen_dice_cbor"],
     shared_libs: [
         "libcrypto",
@@ -153,8 +153,8 @@ cc_library {
 }
 
 cc_library_static {
-    name: "libopen_dice_bcc_baremetal",
-    srcs: [":libopen_dice_bcc_srcs"],
+    name: "libopen_dice_android_baremetal",
+    srcs: [":libopen_dice_android_srcs"],
     export_static_lib_headers: ["libopen_dice_cbor_baremetal"],
     static_libs: [
         "libcrypto_baremetal",
@@ -163,11 +163,11 @@ cc_library_static {
 }
 
 cc_library_static {
-    name: "libopen_dice_bcc_p384",
+    name: "libopen_dice_android_p384",
     defaults: ["libopen_dice.cc_defaults"],
     srcs: [
         "src/cbor_reader.c",
-        "src/android/bcc.c",
+        "src/android.c",
     ],
     static_libs: ["libopen_dice_cbor_p384"],
     export_static_lib_headers: ["libopen_dice_cbor_p384"],
@@ -225,7 +225,7 @@ cc_test {
     host_supported: true,
     cflags: ["-DDICE_USE_GTEST"],
     srcs: ["src/cbor_reader_test.cc"],
-    static_libs: ["libopen_dice_bcc"],
+    static_libs: ["libopen_dice_android"],
 }
 
 cc_test {
@@ -233,16 +233,16 @@ cc_test {
     host_supported: true,
     cflags: ["-DDICE_USE_GTEST"],
     srcs: ["src/cbor_reader_test.cc"],
-    static_libs: ["libopen_dice_bcc_p384"],
+    static_libs: ["libopen_dice_android_p384"],
 }
 
 cc_test {
-    name: "libopen_dice_bcc_test",
+    name: "libopen_dice_android_test",
     host_supported: true,
     cflags: ["-DDICE_USE_GTEST"],
-    srcs: ["src/android/bcc_test.cc"],
+    srcs: ["src/android_test.cc"],
     static_libs: [
-        "libopen_dice_bcc",
+        "libopen_dice_android",
         "libopen_dice_cbor",
     ],
     shared_libs: ["libcrypto"],
@@ -268,14 +268,14 @@ cc_fuzz {
     name: "libopen_dice_cbor_reader_fuzzer",
     host_supported: true,
     srcs: ["src/cbor_reader_fuzzer.cc"],
-    static_libs: ["libopen_dice_bcc"],
+    static_libs: ["libopen_dice_android"],
 }
 
 cc_fuzz {
     name: "libopen_dice_cbor_reader_p384_fuzzer",
     host_supported: true,
     srcs: ["src/cbor_reader_fuzzer.cc"],
-    static_libs: ["libopen_dice_bcc_p384"],
+    static_libs: ["libopen_dice_android_p384"],
 }
 
 cc_fuzz {
@@ -295,22 +295,22 @@ cc_fuzz {
 }
 
 cc_fuzz {
-    name: "libopen_dice_bcc_fuzzer",
+    name: "libopen_dice_android_fuzzer",
     host_supported: true,
-    srcs: ["src/android/bcc_fuzzer.cc"],
+    srcs: ["src/android_fuzzer.cc"],
     static_libs: [
-        "libopen_dice_bcc",
+        "libopen_dice_android",
         "libopen_dice_cbor",
     ],
     shared_libs: ["libcrypto"],
 }
 
 cc_fuzz {
-    name: "libopen_dice_bcc_p384_fuzzer",
+    name: "libopen_dice_android_p384_fuzzer",
     host_supported: true,
-    srcs: ["src/android/bcc_fuzzer.cc"],
+    srcs: ["src/android_fuzzer.cc"],
     static_libs: [
-        "libopen_dice_bcc_p384",
+        "libopen_dice_android_p384",
         "libopen_dice_cbor_p384",
     ],
     shared_libs: ["libcrypto"],

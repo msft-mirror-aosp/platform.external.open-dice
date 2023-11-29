@@ -37,7 +37,8 @@ DiceResult DiceAndroidFormatConfigDescriptor(
   static const int64_t kComponentNameLabel = -70002;
   static const int64_t kComponentVersionLabel = -70003;
   static const int64_t kResettableLabel = -70004;
-  static const int64_t kSecurityVersion = -70005;
+  static const int64_t kSecurityVersionLabel = -70005;
+  static const int64_t kRkpVmMarkerLabel = -70006;
 
   // AndroidConfigDescriptor = {
   //   ? -70002 : tstr,     ; Component name
@@ -61,8 +62,12 @@ DiceResult DiceAndroidFormatConfigDescriptor(
     CborWriteNull(&out);
   }
   if (config_values->configs & DICE_ANDROID_CONFIG_SECURITY_VERSION) {
-    CborWriteInt(kSecurityVersion, &out);
+    CborWriteInt(kSecurityVersionLabel, &out);
     CborWriteUint(config_values->security_version, &out);
+  }
+  if (config_values->configs & DICE_ANDROID_CONFIG_RKP_VM_MARKER) {
+    CborWriteInt(kRkpVmMarkerLabel, &out);
+    CborWriteNull(&out);
   }
   *actual_size = CborOutSize(&out);
   if (CborOutOverflowed(&out)) {
@@ -117,22 +122,23 @@ DiceResult DiceAndroidMainFlow(void* context,
   struct CborOut out;
   CborOutInit(buffer, buffer_size, &out);
   CborWriteArray(chain_item_count + 1, &out);
+  size_t new_chain_prefix_size = CborOutSize(&out);
   if (CborOutOverflowed(&out) ||
-      chain_items_size > buffer_size - CborOutSize(&out)) {
+      chain_items_size > buffer_size - new_chain_prefix_size) {
     // Continue with an empty buffer to measure the required size.
     buffer_size = 0;
   } else {
-    memcpy(buffer + CborOutSize(&out), chain + chain_items_offset,
+    memcpy(buffer + new_chain_prefix_size, chain + chain_items_offset,
            chain_items_size);
-    buffer += CborOutSize(&out) + chain_items_size;
-    buffer_size -= CborOutSize(&out) + chain_items_size;
+    buffer += new_chain_prefix_size + chain_items_size;
+    buffer_size -= new_chain_prefix_size + chain_items_size;
   }
 
   size_t certificate_size;
   result = DiceMainFlow(context, current_cdi_attest, current_cdi_seal,
                         input_values, buffer_size, buffer, &certificate_size,
                         next_cdi_attest, next_cdi_seal);
-  *actual_size = CborOutSize(&out) + chain_items_size + certificate_size;
+  *actual_size = new_chain_prefix_size + chain_items_size + certificate_size;
   return result;
 }
 

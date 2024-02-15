@@ -13,7 +13,7 @@
 // the License.
 
 // This is a DiceGenerateCertificate implementation that generates a CWT-style
-// CBOR certificate using the ED25519-SHA512 signature scheme.
+// CBOR certificate using the P-384 signature algorithm.
 
 #include <stddef.h>
 #include <stdint.h>
@@ -72,9 +72,9 @@ DiceResult DiceCoseEncodePublicKey(
   CborWriteBstr(/*data_size=*/DICE_PUBLIC_KEY_SIZE / 2,
                 &public_key[DICE_PUBLIC_KEY_SIZE / 2], &out);
 
+  *encoded_size = CborOutSize(&out);
   if (CborOutOverflowed(&out)) {
     return kDiceResultBufferTooSmall;
   }
-  *encoded_size = CborOutSize(&out);
   return kDiceResultOk;
 }

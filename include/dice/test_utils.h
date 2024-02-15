@@ -12,6 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#ifndef DICE_TEST_UTILS_H_
+#define DICE_TEST_UTILS_H_
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -55,6 +58,15 @@ void CreateFakeUdsCertificate(void* context, const uint8_t uds[32],
                               uint8_t certificate[kTestCertSize],
                               size_t* certificate_size);
 
+// Verify that a single CDI certificate is properly signed with the given key
+// and contains the expected payload.
+bool VerifyCoseSign1(const uint8_t* certificate, size_t certificate_size,
+                     const uint8_t* external_aad, size_t external_aad_size,
+                     const uint8_t* encoded_public_key,
+                     size_t encoded_public_key_size,
+                     const uint8_t* expected_payload,
+                     size_t expected_payload_size);
+
 // Verifies a chain of CDI certificates given by |states| against
 // |root_certificate|. If |is_partial_chain| is set, then root_certificate does
 // not need to be self signed. For X.509 certificate chains, only the standard
@@ -72,3 +84,5 @@ bool VerifyCertificateChain(CertificateType cert_type,
 
 }  // namespace test
 }  // namespace dice
+
+#endif  // DICE_TEST_UTILS_

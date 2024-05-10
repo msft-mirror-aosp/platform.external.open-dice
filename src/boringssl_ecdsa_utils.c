@@ -36,7 +36,7 @@ static int hmac(uint8_t k[64], uint8_t in[64], uint8_t *out,
                 unsigned int out_len) {
   int ret = 0;
 
-  if (out_len > 64 || out_len < 0) {
+  if (out_len != 64) {
     goto out;
   }
   HMAC_CTX ctx;
@@ -55,7 +55,7 @@ out:
 }
 
 static int hmac3(uint8_t k[64], uint8_t in1[64], uint8_t in2,
-                  const uint8_t *in3, unsigned int in3_len, uint8_t out[64]) {
+                 const uint8_t *in3, unsigned int in3_len, uint8_t out[64]) {
   int ret = 0;
 
   HMAC_CTX ctx;
@@ -82,15 +82,21 @@ out:
   return ret;
 }
 
-// Algorithm from section 3.2 of IETF RFC6979
+// Algorithm from section 3.2 of IETF RFC6979; limited to generating up to 64
+// byte private keys.
 static BIGNUM *derivePrivateKey(const EC_GROUP *group, const uint8_t *seed,
-                                size_t seed_size, uint8_t *private_key,
-                                size_t private_key_len) {
+                                size_t seed_size, size_t private_key_len) {
   BIGNUM *candidate = NULL;
   uint8_t v[64];
   uint8_t k[64];
+  uint8_t temp[64];
   memset(v, 1, 64);
   memset(k, 0, 64);
+  memset(temp, 0, 64);
+
+  if (private_key_len > 64) {
+    goto err;
+  }
 
   if (1 != hmac3(k, v, 0x00, seed, (unsigned int)seed_size, k)) {
     goto err;
@@ -105,13 +111,13 @@ static BIGNUM *derivePrivateKey(const EC_GROUP *group, const uint8_t *seed,
     if (1 != hmac(k, v, v, sizeof(v))) {
       goto err;
     }
-    if (1 != hmac(k, v, private_key, private_key_len)) {
+    if (1 != hmac(k, v, temp, sizeof(temp))) {
       goto err;
     }
     if (1 != hmac3(k, v, 0x00, NULL, 0, k)) {
       goto err;
     }
-    candidate = BN_bin2bn(private_key, private_key_len, NULL);
+    candidate = BN_bin2bn(temp, private_key_len, NULL);
     if (!candidate) {
       goto err;
     }
@@ -148,8 +154,8 @@ int P384KeypairFromSeed(uint8_t public_key[P384_PUBLIC_KEY_SIZE],
     goto out;
   }
 
-  pD = derivePrivateKey(group, seed, DICE_PRIVATE_KEY_SEED_SIZE, private_key,
-                                P384_PRIVATE_KEY_SIZE);
+  pD = derivePrivateKey(group, seed, DICE_PRIVATE_KEY_SEED_SIZE,
+                        P384_PRIVATE_KEY_SIZE);
   if (!pD) {
     goto out;
   }
@@ -173,14 +179,13 @@ int P384KeypairFromSeed(uint8_t public_key[P384_PUBLIC_KEY_SIZE],
   if (1 != EC_POINT_get_affine_coordinates_GFp(group, publicKey, x, y, NULL)) {
     goto out;
   }
-  if (BN_num_bytes(x) > P384_PRIVATE_KEY_SIZE) {
+  if (1 != BN_bn2bin_padded(&public_key[0], P384_PUBLIC_KEY_SIZE / 2, x)) {
     goto out;
   }
-  BN_bn2bin(x, &public_key[0]);
-  if (BN_num_bytes(y) > P384_PRIVATE_KEY_SIZE) {
+  if (1 != BN_bn2bin_padded(&public_key[P384_PUBLIC_KEY_SIZE / 2],
+                            P384_PUBLIC_KEY_SIZE / 2, y)) {
     goto out;
   }
-  BN_bn2bin(y, &public_key[P384_PRIVATE_KEY_SIZE]);
   ret = 1;
 
 out:
@@ -218,15 +223,13 @@ int P384Sign(uint8_t signature[P384_SIGNATURE_SIZE], const uint8_t *message,
   if (!sig) {
     goto out;
   }
-
-  if (BN_num_bytes(sig->r) > P384_PRIVATE_KEY_SIZE) {
+  if (1 != BN_bn2bin_padded(&signature[0], P384_SIGNATURE_SIZE / 2, sig->r)) {
     goto out;
   }
-  BN_bn2bin(sig->r, &signature[0]);
-  if (BN_num_bytes(sig->s) > P384_PRIVATE_KEY_SIZE) {
+  if (1 != BN_bn2bin_padded(&signature[P384_SIGNATURE_SIZE / 2],
+                            P384_SIGNATURE_SIZE / 2, sig->s)) {
     goto out;
   }
-  BN_bn2bin(sig->s, &signature[P384_PRIVATE_KEY_SIZE]);
   ret = 1;
 
 out:
@@ -264,14 +267,14 @@ int P384Verify(const uint8_t *message, size_t message_size,
   if (!y) {
     goto out;
   }
-  bn_ret = BN_bin2bn(&public_key[P384_PUBLIC_KEY_SIZE / 2], P384_PUBLIC_KEY_SIZE / 2, y);
+  bn_ret = BN_bin2bn(&public_key[P384_PUBLIC_KEY_SIZE / 2],
+                     P384_PUBLIC_KEY_SIZE / 2, y);
   if (!bn_ret) {
     goto out;
   }
   if (1 != EC_KEY_set_public_key_affine_coordinates(key, x, y)) {
     goto out;
   }
-
 
   sig = ECDSA_SIG_new();
   if (!sig) {
@@ -281,8 +284,8 @@ int P384Verify(const uint8_t *message, size_t message_size,
   if (!bn_ret) {
     goto out;
   }
-  bn_ret = BN_bin2bn(&signature[P384_SIGNATURE_SIZE / 2], P384_SIGNATURE_SIZE / 2,
-            sig->s);
+  bn_ret = BN_bin2bn(&signature[P384_SIGNATURE_SIZE / 2],
+                     P384_SIGNATURE_SIZE / 2, sig->s);
   if (!bn_ret) {
     goto out;
   }

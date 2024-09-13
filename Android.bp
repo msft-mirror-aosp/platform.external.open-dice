@@ -91,6 +91,12 @@ cc_library {
         "libopen_dice_headers",
     ],
     shared_libs: ["libcrypto"],
+
+    // b/336916369: This library gets linked into a rust rlib.  Disable LTO
+    // until cross-language lto is supported.
+    lto: {
+        never: true,
+    },
 }
 
 cc_library_static {
@@ -131,6 +137,12 @@ cc_library_static {
         "libopen_dice_headers",
     ],
     static_libs: ["libcrypto_baremetal"],
+
+    // b/336916369: This library gets linked into a rust rlib.  Disable LTO
+    // until cross-language lto is supported.
+    lto: {
+        never: true,
+    },
 }
 
 filegroup {
@@ -150,6 +162,12 @@ cc_library {
         "libcrypto",
         "libopen_dice_cbor",
     ],
+
+    // b/336916369: This library gets linked into a rust rlib.  Disable LTO
+    // until cross-language lto is supported.
+    lto: {
+        never: true,
+    },
 }
 
 cc_library_static {
@@ -160,6 +178,12 @@ cc_library_static {
         "libcrypto_baremetal",
         "libopen_dice_cbor_baremetal",
     ],
+
+    // b/336916369: This library gets linked into a rust rlib.  Disable LTO
+    // until cross-language lto is supported.
+    lto: {
+        never: true,
+    },
 }
 
 cc_library_static {

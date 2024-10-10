@@ -339,3 +339,9 @@ cc_fuzz {
     ],
     shared_libs: ["libcrypto"],
 }
+
+dirgroup {
+    name: "trusty_dirgroup_external_open-dice",
+    dirs: ["."],
+    visibility: ["//trusty/vendor/google/aosp/scripts"],
+}

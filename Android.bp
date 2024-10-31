@@ -121,6 +121,7 @@ cc_library_static {
 // Version of the library missing DiceClearMemory, for baremetal client code.
 cc_library_static {
     name: "libopen_dice_cbor_baremetal",
+    defaults: ["cc_baremetal_defaults"],
     srcs: [
         ":libopen_dice_cbor_common_srcs",
         ":libopen_dice_cbor_ed25519_srcs",
@@ -172,6 +173,7 @@ cc_library {
 
 cc_library_static {
     name: "libopen_dice_android_baremetal",
+    defaults: ["cc_baremetal_defaults"],
     srcs: [":libopen_dice_android_srcs"],
     export_static_lib_headers: ["libopen_dice_cbor_baremetal"],
     static_libs: [
@@ -338,4 +340,10 @@ cc_fuzz {
         "libopen_dice_cbor_p384",
     ],
     shared_libs: ["libcrypto"],
+}
+
+dirgroup {
+    name: "trusty_dirgroup_external_open-dice",
+    dirs: ["."],
+    visibility: ["//trusty/vendor/google/aosp/scripts"],
 }

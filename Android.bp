@@ -67,7 +67,6 @@ filegroup {
     name: "libopen_dice_cbor_ed25519_srcs",
     srcs: [
         "src/boringssl_ed25519_ops.c",
-        "src/cbor_ed25519_cert_op.c",
     ],
 }
 
@@ -76,7 +75,6 @@ filegroup {
     srcs: [
         "src/boringssl_ecdsa_utils.c",
         "src/boringssl_p384_ops.c",
-        "src/cbor_p384_cert_op.c",
     ],
 }
 

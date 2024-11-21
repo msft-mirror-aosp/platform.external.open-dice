@@ -39,6 +39,12 @@ cc_library_headers {
     export_include_dirs: ["include/dice/config/boringssl_ecdsa_p384"],
 }
 
+cc_library_headers {
+    name: "libopen_dice_standalone_headers",
+    defaults: ["libopen_dice.cc_defaults"],
+    export_include_dirs: ["include/dice/config/standalone"],
+}
+
 filegroup {
     name: "libopen_dice_common_srcs",
     srcs: [
@@ -144,6 +150,24 @@ cc_library_static {
     lto: {
         never: true,
     },
+}
+
+// Basic, standalone implementation of DiceClearMemory, for tests.
+//
+// Attention has not been given to performance, clearing caches or other
+// potential side channels. This should only be used in contexts that are not
+// security sensitive, such as tests.
+cc_library_static {
+    name: "libopen_dice_clear_memory",
+    defaults: ["cc_baremetal_defaults"],
+    srcs: ["src/clear_memory.c"],
+    header_libs: [
+        "libopen_dice_standalone_headers",
+        "libopen_dice_headers",
+    ],
+    visibility: [
+        "//packages/modules/Virtualization:__subpackages__",
+    ],
 }
 
 filegroup {

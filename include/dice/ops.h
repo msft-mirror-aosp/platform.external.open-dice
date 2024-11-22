@@ -26,6 +26,11 @@
 extern "C" {
 #endif
 
+// Retrieves the DICE key parameters based on the key pair generation
+// algorithm set up at compile time or in the |context| parameter at runtime.
+DiceResult DiceGetKeyParam(void* context, DicePrincipal principal,
+                           DiceKeyParam* key_param);
+
 // An implementation of SHA-512, or an alternative hash. Hashes |input_size|
 // bytes of |input| and populates |output| on success.
 DiceResult DiceHash(void* context, const uint8_t* input, size_t input_size,
@@ -42,9 +47,9 @@ DiceResult DiceKdf(void* context, size_t length, const uint8_t* ikm,
 // Since this is deterministic, |seed| is as sensitive as a private key and can
 // be used directly as the private key. The |private_key| may use an
 // implementation defined format so may only be passed to the |sign| operation.
-DiceResult DiceKeypairFromSeed(void* context,
+DiceResult DiceKeypairFromSeed(void* context, DicePrincipal principal,
                                const uint8_t seed[DICE_PRIVATE_KEY_SEED_SIZE],
-                               uint8_t public_key[DICE_PUBLIC_KEY_SIZE],
+                               uint8_t public_key[DICE_PUBLIC_KEY_BUFFER_SIZE],
                                uint8_t private_key[DICE_PRIVATE_KEY_SIZE]);
 
 // Calculates a signature of |message_size| bytes from |message| using
@@ -53,14 +58,14 @@ DiceResult DiceKeypairFromSeed(void* context,
 // the buffer where the calculated signature is written.
 DiceResult DiceSign(void* context, const uint8_t* message, size_t message_size,
                     const uint8_t private_key[DICE_PRIVATE_KEY_SIZE],
-                    uint8_t signature[DICE_SIGNATURE_SIZE]);
+                    uint8_t signature[DICE_SIGNATURE_BUFFER_SIZE]);
 
 // Verifies, using |public_key|, that |signature| covers |message_size| bytes
 // from |message|.
 DiceResult DiceVerify(void* context, const uint8_t* message,
                       size_t message_size,
-                      const uint8_t signature[DICE_SIGNATURE_SIZE],
-                      const uint8_t public_key[DICE_PUBLIC_KEY_SIZE]);
+                      const uint8_t signature[DICE_SIGNATURE_BUFFER_SIZE],
+                      const uint8_t public_key[DICE_PUBLIC_KEY_BUFFER_SIZE]);
 
 // Generates an X.509 certificate, or an alternative certificate format, from
 // the given |subject_private_key_seed| and |input_values|, and signed by

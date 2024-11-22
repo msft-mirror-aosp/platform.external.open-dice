@@ -130,7 +130,7 @@ static DiceResult EncodeCoseSign1(
 DiceResult DiceCoseSignAndEncodeSign1(
     void* context, const uint8_t* payload, size_t payload_size,
     const uint8_t* aad, size_t aad_size,
-    const uint8_t private_key[DICE_PRIVATE_KEY_SIZE], size_t buffer_size,
+    const uint8_t private_key[DICE_PRIVATE_KEY_BUFFER_SIZE], size_t buffer_size,
     uint8_t* buffer, size_t* encoded_size) {
   DiceResult result;
 
@@ -141,7 +141,7 @@ DiceResult DiceCoseSignAndEncodeSign1(
   uint8_t protected_attributes[DICE_MAX_PROTECTED_ATTRIBUTES_SIZE];
   size_t protected_attributes_size = 0;
   result = EncodeProtectedAttributes(
-      context, kDicePrincipalSubject, sizeof(protected_attributes),
+      context, kDicePrincipalAuthority, sizeof(protected_attributes),
       protected_attributes, &protected_attributes_size);
   if (result != kDiceResultOk) {
     return kDiceResultPlatformError;
@@ -318,8 +318,8 @@ DiceResult DiceGenerateCertificate(
   }
 
   // Declare buffers which are cleared on 'goto out'.
-  uint8_t subject_private_key[DICE_PRIVATE_KEY_SIZE];
-  uint8_t authority_private_key[DICE_PRIVATE_KEY_SIZE];
+  uint8_t subject_private_key[DICE_PRIVATE_KEY_BUFFER_SIZE];
+  uint8_t authority_private_key[DICE_PRIVATE_KEY_BUFFER_SIZE];
 
   // Derive keys and IDs from the private key seeds.
   uint8_t subject_public_key[DICE_PUBLIC_KEY_BUFFER_SIZE];
@@ -390,7 +390,7 @@ DiceResult DiceGenerateCertificate(
   uint8_t protected_attributes[DICE_MAX_PROTECTED_ATTRIBUTES_SIZE];
   size_t protected_attributes_size = 0;
   result = EncodeProtectedAttributes(
-      context, kDicePrincipalSubject, sizeof(protected_attributes),
+      context, kDicePrincipalAuthority, sizeof(protected_attributes),
       protected_attributes, &protected_attributes_size);
   if (result != kDiceResultOk) {
     result = kDiceResultPlatformError;

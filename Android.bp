@@ -39,6 +39,18 @@ cc_library_headers {
     export_include_dirs: ["include/dice/config/boringssl_ecdsa_p384"],
 }
 
+cc_library_headers {
+    name: "libopen_dice_standalone_headers",
+    defaults: ["libopen_dice.cc_defaults"],
+    export_include_dirs: ["include/dice/config/standalone"],
+}
+
+cc_library_headers {
+    name: "libopen_dice_boringssl_multialg_headers",
+    defaults: ["libopen_dice.cc_defaults"],
+    export_include_dirs: ["include/dice/config/boringssl_multialg"],
+}
+
 filegroup {
     name: "libopen_dice_common_srcs",
     srcs: [
@@ -61,7 +73,6 @@ filegroup {
     name: "libopen_dice_cbor_ed25519_srcs",
     srcs: [
         "src/boringssl_ed25519_ops.c",
-        "src/cbor_ed25519_cert_op.c",
     ],
 }
 
@@ -70,7 +81,14 @@ filegroup {
     srcs: [
         "src/boringssl_ecdsa_utils.c",
         "src/boringssl_p384_ops.c",
-        "src/cbor_p384_cert_op.c",
+    ],
+}
+
+filegroup {
+    name: "libopen_dice_cbor_multialg_srcs",
+    srcs: [
+        "src/boringssl_ecdsa_utils.c",
+        "src/boringssl_multialg_ops.c",
     ],
 }
 
@@ -120,21 +138,21 @@ cc_library_static {
 
 // Version of the library missing DiceClearMemory, for baremetal client code.
 cc_library_static {
-    name: "libopen_dice_cbor_baremetal",
+    name: "libopen_dice_cbor_baremetal_multialg",
     defaults: ["cc_baremetal_defaults"],
     srcs: [
         ":libopen_dice_cbor_common_srcs",
-        ":libopen_dice_cbor_ed25519_srcs",
+        ":libopen_dice_cbor_multialg_srcs",
         ":libopen_dice_common_srcs",
     ],
     exclude_srcs: ["src/clear_memory.c"],
     allow_undefined_symbols: true,
     header_libs: [
-        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_boringssl_multialg_headers",
         "libopen_dice_headers",
     ],
     export_header_lib_headers: [
-        "libopen_dice_boringssl_ed25519_headers",
+        "libopen_dice_boringssl_multialg_headers",
         "libopen_dice_headers",
     ],
     static_libs: ["libcrypto_baremetal"],
@@ -144,6 +162,24 @@ cc_library_static {
     lto: {
         never: true,
     },
+}
+
+// Basic, standalone implementation of DiceClearMemory, for tests.
+//
+// Attention has not been given to performance, clearing caches or other
+// potential side channels. This should only be used in contexts that are not
+// security sensitive, such as tests.
+cc_library_static {
+    name: "libopen_dice_clear_memory",
+    defaults: ["cc_baremetal_defaults"],
+    srcs: ["src/clear_memory.c"],
+    header_libs: [
+        "libopen_dice_standalone_headers",
+        "libopen_dice_headers",
+    ],
+    visibility: [
+        "//packages/modules/Virtualization:__subpackages__",
+    ],
 }
 
 filegroup {
@@ -172,13 +208,13 @@ cc_library {
 }
 
 cc_library_static {
-    name: "libopen_dice_android_baremetal",
+    name: "libopen_dice_android_baremetal_multialg",
     defaults: ["cc_baremetal_defaults"],
     srcs: [":libopen_dice_android_srcs"],
-    export_static_lib_headers: ["libopen_dice_cbor_baremetal"],
+    export_static_lib_headers: ["libopen_dice_cbor_baremetal_multialg"],
     static_libs: [
         "libcrypto_baremetal",
-        "libopen_dice_cbor_baremetal",
+        "libopen_dice_cbor_baremetal_multialg",
     ],
 
     // b/336916369: This library gets linked into a rust rlib.  Disable LTO

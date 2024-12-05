@@ -40,12 +40,6 @@ cc_library_headers {
 }
 
 cc_library_headers {
-    name: "libopen_dice_standalone_headers",
-    defaults: ["libopen_dice.cc_defaults"],
-    export_include_dirs: ["include/dice/config/standalone"],
-}
-
-cc_library_headers {
     name: "libopen_dice_boringssl_multialg_headers",
     defaults: ["libopen_dice.cc_defaults"],
     export_include_dirs: ["include/dice/config/boringssl_multialg"],
@@ -173,10 +167,7 @@ cc_library_static {
     name: "libopen_dice_clear_memory",
     defaults: ["cc_baremetal_defaults"],
     srcs: ["src/clear_memory.c"],
-    header_libs: [
-        "libopen_dice_standalone_headers",
-        "libopen_dice_headers",
-    ],
+    header_libs: ["libopen_dice_headers"],
     visibility: [
         "//packages/modules/Virtualization:__subpackages__",
     ],

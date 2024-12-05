@@ -33,8 +33,9 @@ extern "C" {
 // kDiceResultBufferTooSmall is returned |encoded_size| will be set to the
 // required size of the buffer.
 DiceResult DiceCoseEncodePublicKey(
-    void* context, const uint8_t public_key[DICE_PUBLIC_KEY_SIZE],
-    size_t buffer_size, uint8_t* buffer, size_t* encoded_size);
+    void* context, DicePrincipal principal,
+    const uint8_t public_key[DICE_PUBLIC_KEY_BUFFER_SIZE], size_t buffer_size,
+    uint8_t* buffer, size_t* encoded_size);
 
 // Signs the payload and additional authenticated data, formatting the result
 // into a COSE_Sign1 structure. There are no unprotected attributes included in
@@ -47,7 +48,7 @@ DiceResult DiceCoseEncodePublicKey(
 DiceResult DiceCoseSignAndEncodeSign1(
     void* context, const uint8_t* payload, size_t payload_size,
     const uint8_t* aad, size_t aad_size,
-    const uint8_t private_key[DICE_PRIVATE_KEY_SIZE], size_t buffer_size,
+    const uint8_t private_key[DICE_PRIVATE_KEY_BUFFER_SIZE], size_t buffer_size,
     uint8_t* buffer, size_t* encoded_size);
 
 #ifdef __cplusplus

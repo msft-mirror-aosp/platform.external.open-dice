@@ -20,9 +20,9 @@
 
 #include "dice/types.h"
 
-// Upper bound of sizes based on P-384.
+// Upper bound of sizes for all the supported algorithms.
 #define DICE_PUBLIC_KEY_BUFFER_SIZE 96
-#define DICE_PRIVATE_KEY_SIZE 64
+#define DICE_PRIVATE_KEY_BUFFER_SIZE 64
 #define DICE_SIGNATURE_BUFFER_SIZE 96
 
 #ifdef __cplusplus
@@ -42,15 +42,22 @@ typedef struct DiceContext_ {
   DiceKeyAlgorithm subject_algorithm;
 } DiceContext;
 
-static inline DiceKeyAlgorithm DiceGetKeyAlgorithm(void* context,
-                                                   DicePrincipal principal) {
+static inline DiceResult DiceGetKeyAlgorithm(void* context,
+                                             DicePrincipal principal,
+                                             DiceKeyAlgorithm* alg) {
   DiceContext* c = (DiceContext*)context;
+  if (context == NULL) {
+    return kDiceResultInvalidInput;
+  }
   switch (principal) {
     case kDicePrincipalAuthority:
-      return c->authority_algorithm;
+      *alg = c->authority_algorithm;
+      break;
     case kDicePrincipalSubject:
-      return c->subject_algorithm;
+      *alg = c->subject_algorithm;
+      break;
   }
+  return kDiceResultOk;
 }
 
 #ifdef __cplusplus

@@ -22,10 +22,24 @@ config("external_config_ed25519") {
   ]
 }
 
+config("external_config_p256") {
+  include_dirs = [
+    "src/include",
+    "include/p256",
+  ]
+}
+
 config("external_config_p384") {
   include_dirs = [
     "src/include",
     "include/p384",
+  ]
+}
+
+config("external_config_multialg") {
+  include_dirs = [
+    "src/include",
+    "include/multialg",
   ]
 }
 
@@ -35,16 +49,29 @@ config("internal_config") {
   cflags = [ "-Wno-cast-qual" ]
 }
 
+cose_c_sources = [
+  "cose_deps.cc",
+  "src/src/Cose.cpp",
+  "src/src/CoseKey.cpp",
+  "src/src/Sign1.cpp",
+  "src/src/cbor.cpp",
+]
+
 pw_static_library("cose-c_ed25519") {
   public = [ "src/include/cose/cose.h" ]
-  sources = [
-    "cose_ed25519_deps.cc",
-    "src/src/Cose.cpp",
-    "src/src/CoseKey.cpp",
-    "src/src/Sign1.cpp",
-    "src/src/cbor.cpp",
-  ]
+  sources = cose_c_sources
   public_configs = [ ":external_config_ed25519" ]
+  configs = [ ":internal_config" ]
+  public_deps = [
+    "//third_party/boringssl:crypto",
+    "//third_party/cn-cbor:cn-cbor",
+  ]
+}
+
+pw_static_library("cose-c_p256") {
+  public = [ "src/include/cose/cose.h" ]
+  sources = cose_c_sources
+  public_configs = [ ":external_config_p256" ]
   configs = [ ":internal_config" ]
   public_deps = [
     "//third_party/boringssl:crypto",
@@ -54,14 +81,25 @@ pw_static_library("cose-c_ed25519") {
 
 pw_static_library("cose-c_p384") {
   public = [ "src/include/cose/cose.h" ]
+  sources = cose_c_sources
+  public_configs = [ ":external_config_p384" ]
+  configs = [ ":internal_config" ]
+  public_deps = [
+    "//third_party/boringssl:crypto",
+    "//third_party/cn-cbor:cn-cbor",
+  ]
+}
+
+pw_static_library("cose-c_multialg") {
+  public = [ "src/include/cose/cose.h" ]
   sources = [
-    "cose_p384_deps.cc",
+    "cose_deps.cc",
     "src/src/Cose.cpp",
     "src/src/CoseKey.cpp",
     "src/src/Sign1.cpp",
     "src/src/cbor.cpp",
   ]
-  public_configs = [ ":external_config_p384" ]
+  public_configs = [ ":external_config_multialg" ]
   configs = [ ":internal_config" ]
   public_deps = [
     "//third_party/boringssl:crypto",

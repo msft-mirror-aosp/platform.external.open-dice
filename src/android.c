@@ -134,7 +134,7 @@ DiceResult DiceAndroidMainFlow(void* context,
     buffer_size -= new_chain_prefix_size + chain_items_size;
   }
 
-  size_t certificate_size;
+  size_t certificate_size = 0;
   result = DiceMainFlow(context, current_cdi_attest, current_cdi_seal,
                         input_values, buffer_size, buffer, &certificate_size,
                         next_cdi_attest, next_cdi_seal);
@@ -149,8 +149,8 @@ static DiceResult DiceAndroidMainFlowWithNewDiceChain(
     size_t* chain_size, uint8_t next_cdi_attest[DICE_CDI_SIZE],
     uint8_t next_cdi_seal[DICE_CDI_SIZE]) {
   uint8_t current_cdi_private_key_seed[DICE_PRIVATE_KEY_SEED_SIZE];
-  uint8_t attestation_public_key[DICE_PUBLIC_KEY_SIZE];
-  uint8_t attestation_private_key[DICE_PRIVATE_KEY_SIZE];
+  uint8_t attestation_public_key[DICE_PUBLIC_KEY_BUFFER_SIZE];
+  uint8_t attestation_private_key[DICE_PRIVATE_KEY_BUFFER_SIZE];
   // Derive an asymmetric private key seed from the current attestation CDI
   // value.
   DiceResult result = DiceDeriveCdiPrivateKeySeed(context, current_cdi_attest,
@@ -159,7 +159,8 @@ static DiceResult DiceAndroidMainFlowWithNewDiceChain(
     goto out;
   }
   // Derive attestation key pair.
-  result = DiceKeypairFromSeed(context, current_cdi_private_key_seed,
+  result = DiceKeypairFromSeed(context, kDicePrincipalAuthority,
+                               current_cdi_private_key_seed,
                                attestation_public_key, attestation_private_key);
   if (result != kDiceResultOk) {
     goto out;
@@ -180,8 +181,9 @@ static DiceResult DiceAndroidMainFlowWithNewDiceChain(
   }
 
   size_t encoded_pub_key_size = 0;
-  result = DiceCoseEncodePublicKey(context, attestation_public_key, buffer_size,
-                                   buffer, &encoded_pub_key_size);
+  result = DiceCoseEncodePublicKey(context, kDicePrincipalAuthority,
+                                   attestation_public_key, buffer_size, buffer,
+                                   &encoded_pub_key_size);
   if (result == kDiceResultOk) {
     buffer += encoded_pub_key_size;
     buffer_size -= encoded_pub_key_size;

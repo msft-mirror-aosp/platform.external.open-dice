@@ -30,19 +30,28 @@ cc_library_headers {
 cc_library_headers {
     name: "libopen_dice_boringssl_ed25519_headers",
     defaults: ["libopen_dice.cc_defaults"],
-    export_include_dirs: ["include/dice/config/boringssl_ed25519"],
+    export_include_dirs: [
+        "include/dice/config/boringssl_ed25519",
+        "include/dice/config/android",
+    ],
 }
 
 cc_library_headers {
     name: "libopen_dice_boringssl_ecdsa_p384_headers",
     defaults: ["libopen_dice.cc_defaults"],
-    export_include_dirs: ["include/dice/config/boringssl_ecdsa_p384"],
+    export_include_dirs: [
+        "include/dice/config/boringssl_ecdsa_p384",
+        "include/dice/config/default",
+    ],
 }
 
 cc_library_headers {
     name: "libopen_dice_boringssl_multialg_headers",
     defaults: ["libopen_dice.cc_defaults"],
-    export_include_dirs: ["include/dice/config/boringssl_multialg"],
+    export_include_dirs: [
+        "include/dice/config/boringssl_multialg",
+        "include/dice/config/android",
+    ],
 }
 
 filegroup {

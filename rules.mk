@@ -32,6 +32,7 @@ MODULE_SRCS := \
 MODULE_EXPORT_INCLUDES += \
 	$(LOCAL_DIR)/include/ \
 	$(LOCAL_DIR)/include/dice/config/boringssl_ed25519 \
+	$(LOCAL_DIR)/include/dice/config/default \
 
 MODULE_LIBRARY_DEPS := \
 	external/boringssl \

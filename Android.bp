@@ -25,6 +25,7 @@ cc_library_headers {
     name: "libopen_dice_headers",
     defaults: ["libopen_dice.cc_defaults"],
     export_include_dirs: ["include"],
+    min_sdk_version: "35",
 }
 
 cc_library_headers {
@@ -34,6 +35,7 @@ cc_library_headers {
         "include/dice/config/boringssl_ed25519",
         "include/dice/config/android",
     ],
+    min_sdk_version: "35",
 }
 
 cc_library_headers {
@@ -101,6 +103,7 @@ cc_library {
     lto: {
         never: true,
     },
+    min_sdk_version: "35",
 }
 
 cc_library {
@@ -194,6 +197,7 @@ cc_library {
     lto: {
         never: true,
     },
+    min_sdk_version: "35",
 }
 
 cc_library {

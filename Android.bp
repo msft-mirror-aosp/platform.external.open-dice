@@ -103,6 +103,31 @@ cc_library {
     },
 }
 
+cc_library {
+    name: "libopen_dice_cbor_multialg",
+    defaults: ["libopen_dice.cc_defaults"],
+    srcs: [
+        ":libopen_dice_cbor_common_srcs",
+        ":libopen_dice_cbor_multialg_srcs",
+        ":libopen_dice_common_srcs",
+    ],
+    header_libs: [
+        "libopen_dice_boringssl_multialg_headers",
+        "libopen_dice_headers",
+    ],
+    export_header_lib_headers: [
+        "libopen_dice_boringssl_multialg_headers",
+        "libopen_dice_headers",
+    ],
+    shared_libs: ["libcrypto"],
+
+    // b/336916369: This library gets linked into a rust rlib.  Disable LTO
+    // until cross-language lto is supported.
+    lto: {
+        never: true,
+    },
+}
+
 // Version of the library missing DiceClearMemory, for baremetal client code.
 cc_library_static {
     name: "libopen_dice_cbor_baremetal_multialg",
@@ -162,6 +187,23 @@ cc_library {
     shared_libs: [
         "libcrypto",
         "libopen_dice_cbor",
+    ],
+
+    // b/336916369: This library gets linked into a rust rlib.  Disable LTO
+    // until cross-language lto is supported.
+    lto: {
+        never: true,
+    },
+}
+
+cc_library {
+    name: "libopen_dice_android_multialg",
+    defaults: ["libopen_dice.cc_defaults"],
+    srcs: [":libopen_dice_android_srcs"],
+    export_shared_lib_headers: ["libopen_dice_cbor_multialg"],
+    shared_libs: [
+        "libcrypto",
+        "libopen_dice_cbor_multialg",
     ],
 
     // b/336916369: This library gets linked into a rust rlib.  Disable LTO

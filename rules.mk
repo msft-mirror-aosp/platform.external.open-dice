@@ -32,7 +32,22 @@ MODULE_SRCS := \
 MODULE_EXPORT_INCLUDES += \
 	$(LOCAL_DIR)/include/ \
 	$(LOCAL_DIR)/include/dice/config/boringssl_ed25519 \
-	$(LOCAL_DIR)/include/dice/config/default \
+
+# If not specified, we use the default dice config.
+# Certain use cases, like trusty in a VM require
+# the latest Android profile for dice and can set
+# DICE_PROFILE_FOR_OPEN_DICE := android
+DICE_PROFILE_FOR_OPEN_DICE ?= default
+
+ifeq (android, $(DICE_PROFILE_FOR_OPEN_DICE))
+MODULE_EXPORT_INCLUDES += \
+	$(LOCAL_DIR)/include/dice/config/android
+else ifeq (default, $(DICE_PROFILE_FOR_OPEN_DICE))
+MODULE_EXPORT_INCLUDES += \
+	$(LOCAL_DIR)/include/dice/config/default
+else
+$(error "Unsupported dice profile: $(DICE_PROFILE_FOR_OPEN_DICE)")
+endif
 
 MODULE_LIBRARY_DEPS := \
 	external/boringssl \

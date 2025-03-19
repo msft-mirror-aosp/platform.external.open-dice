@@ -45,6 +45,7 @@ cc_library_headers {
         "include/dice/config/boringssl_multialg",
         "include/dice/config/android",
     ],
+    min_sdk_version: "35",
 }
 
 filegroup {
@@ -129,6 +130,7 @@ cc_library {
     lto: {
         never: true,
     },
+    min_sdk_version: "35",
 }
 
 // Version of the library missing DiceClearMemory, for baremetal client code.
@@ -215,6 +217,7 @@ cc_library {
     lto: {
         never: true,
     },
+    min_sdk_version: "35",
 }
 
 cc_library_static {

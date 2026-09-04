@@ -21,7 +21,6 @@ MODULE := $(LOCAL_DIR)
 MODULE_SRCS := \
 	$(LOCAL_DIR)/src/android.c \
 	$(LOCAL_DIR)/src/boringssl_hash_kdf_ops.c \
-	$(LOCAL_DIR)/src/boringssl_ed25519_ops.c \
 	$(LOCAL_DIR)/src/cbor_cert_op.c \
 	$(LOCAL_DIR)/src/cbor_reader.c \
 	$(LOCAL_DIR)/src/cbor_writer.c \
@@ -31,7 +30,26 @@ MODULE_SRCS := \
 
 MODULE_EXPORT_INCLUDES += \
 	$(LOCAL_DIR)/include/ \
-	$(LOCAL_DIR)/include/dice/config/boringssl_ed25519 \
+
+DICE_OPS_FOR_OPEN_DICE ?= boringssl_ed25519
+
+ifeq (boringssl_multialg, $(DICE_OPS_FOR_OPEN_DICE))
+MODULE_SRCS += \
+	$(LOCAL_DIR)/src/boringssl_ecdsa_utils.c \
+	$(LOCAL_DIR)/src/boringssl_mldsa_utils.c \
+	$(LOCAL_DIR)/src/boringssl_multialg_ops.c \
+
+MODULE_EXPORT_INCLUDES += \
+	$(LOCAL_DIR)/include/dice/config/boringssl_multialg
+else ifeq (boringssl_ed25519, $(DICE_OPS_FOR_OPEN_DICE))
+MODULE_SRCS += \
+	$(LOCAL_DIR)/src/boringssl_ed25519_ops.c \
+
+MODULE_EXPORT_INCLUDES += \
+	$(LOCAL_DIR)/include/dice/config/boringssl_ed25519
+else
+$(error "Unsupported dice ops: $(DICE_OPS_FOR_OPEN_DICE)")
+endif
 
 # If not specified, we use the default dice config.
 # Certain use cases, like trusty in a VM require

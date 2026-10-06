@@ -11,4 +11,9 @@ third_party {
   }
   version: "bf2b2b3e951ca78956cabcb94e60fdaf5d83e017"
   last_upgrade_date { year: 2021 month: 7 day: 16 }
+  security: {
+    tag: "android:on_device_usage"
+    tag: "android:privilege_level:privileged"
+    tag: "android:untrusted_input"
+  }
 }
